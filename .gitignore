@@ -27,5 +27,10 @@ Thumbs.db
 .ai-rules
 ai-procedure
 
+# local UI planning/export docs
+/ui/phase1/
+
 # typescript
 *.tsbuildinfo
+
+/document
