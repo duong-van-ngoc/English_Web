@@ -26,11 +26,14 @@ Thumbs.db
 # AI folders
 .ai-rules
 ai-procedure
+!backend/ai-procedure/
+!backend/ai-procedure/**
 
 # local UI planning/export docs
-/ui/phase1/
+/ui/
 
 # typescript
 *.tsbuildinfo
 
 /document
+/roadmap

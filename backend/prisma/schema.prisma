@@ -1,0 +1,286 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  FILL_BLANK
+  TRUE_FALSE
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum ToeicQuestionSetType {
+  PRACTICE
+  MOCK_TEST
+}
+
+enum ToeicAttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+}
+
+model User {
+  id                  String                   @id @default(cuid())
+  email               String                   @unique
+  password            String
+  name                String?
+  role                UserRole                 @default(USER)
+  progress            Progress[]
+  attempts            Attempt[]
+  toeicAttempts       ToeicAttempt[]
+  toeicWrongQuestions ToeicUserWrongQuestion[]
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+}
+
+model Course {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  description String?
+  level       String
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?
+  lessons     Lesson[]
+  progress    Progress[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Lesson {
+  id          String        @id @default(cuid())
+  courseId    String
+  title       String
+  content     String
+  order       Int
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  vocabulary  Vocabulary[]
+  questions   Question[]
+  progress    Progress[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([courseId, order])
+}
+
+model Vocabulary {
+  id        String   @id @default(cuid())
+  lessonId  String
+  word      String
+  meaning   String
+  phonetic  String?
+  example   String?
+  audioUrl  String?
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Question {
+  id             String          @id @default(cuid())
+  lessonId       String
+  title          String
+  type           QuestionType    @default(SINGLE_CHOICE)
+  explanation    String?
+  status         ContentStatus   @default(DRAFT)
+  publishedAt    DateTime?
+  order          Int             @default(0)
+  lesson         Lesson          @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  answers        Answer[]
+  attemptAnswers AttemptAnswer[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model Answer {
+  id                 String          @id @default(cuid())
+  questionId         String
+  content            String
+  isCorrect          Boolean         @default(false)
+  question           Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedInAttempts AttemptAnswer[] @relation("AttemptSelectedAnswer")
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+}
+
+model Progress {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  lessonId  String?
+  completed Boolean  @default(false)
+  score     Int?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson    Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Attempt {
+  id        String          @id @default(cuid())
+  userId    String
+  score     Int             @default(0)
+  total     Int             @default(0)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers   AttemptAnswer[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model AttemptAnswer {
+  id         String   @id @default(cuid())
+  attemptId  String
+  questionId String
+  answerId   String?
+  isCorrect  Boolean  @default(false)
+  attempt    Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answer     Answer?  @relation("AttemptSelectedAnswer", fields: [answerId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([attemptId, questionId])
+}
+
+model ToeicQuestionSet {
+  id          String               @id @default(cuid())
+  title       String
+  description String?
+  part        Int
+  type        ToeicQuestionSetType @default(PRACTICE)
+  duration    Int?
+  version     Int                  @default(1)
+  groups      ToeicQuestionGroup[]
+  attempts    ToeicAttempt[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([part, type])
+}
+
+model ToeicQuestionGroup {
+  id             String             @id @default(cuid())
+  questionSetId  String
+  title          String?
+  audioUrl       String?
+  imageUrl       String?
+  passageContent String?
+  transcript     String?
+  order          Int                @default(0)
+  questionSet    ToeicQuestionSet   @relation(fields: [questionSetId], references: [id], onDelete: Cascade)
+  questions      ToeicQuestion[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([questionSetId, order])
+  @@index([questionSetId, order])
+}
+
+model ToeicQuestion {
+  id                  String                   @id @default(cuid())
+  questionGroupId     String
+  content             String
+  explanation         String?
+  order               Int                      @default(0)
+  questionGroup       ToeicQuestionGroup       @relation(fields: [questionGroupId], references: [id], onDelete: Cascade)
+  choices             ToeicChoice[]
+  attemptAnswers      ToeicAttemptAnswer[]
+  userWrongQuestions  ToeicUserWrongQuestion[]
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  @@unique([questionGroupId, order])
+  @@index([questionGroupId, order])
+}
+
+model ToeicChoice {
+  id                 String                @id @default(cuid())
+  questionId         String
+  label              String
+  content            String
+  isCorrect          Boolean               @default(false)
+  question           ToeicQuestion         @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedInAttempts ToeicAttemptAnswer[]  @relation("ToeicAttemptSelectedChoice")
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@unique([questionId, label])
+}
+
+model ToeicAttempt {
+  id                 String               @id @default(cuid())
+  userId             String
+  questionSetId      String
+  questionSetVersion Int
+  status             ToeicAttemptStatus   @default(IN_PROGRESS)
+  totalQuestions     Int                  @default(0)
+  correctAnswers     Int                  @default(0)
+  wrongAnswers       Int                  @default(0)
+  score              Int                  @default(0)
+  startedAt          DateTime             @default(now())
+  submittedAt        DateTime?
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionSet        ToeicQuestionSet     @relation(fields: [questionSetId], references: [id], onDelete: Restrict)
+  answers            ToeicAttemptAnswer[]
+  wrongQuestions     ToeicUserWrongQuestion[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([userId, submittedAt])
+  @@index([questionSetId])
+}
+
+model ToeicAttemptAnswer {
+  id               String        @id @default(cuid())
+  attemptId        String
+  questionId       String
+  selectedChoiceId String?
+  isCorrect        Boolean       @default(false)
+  attempt          ToeicAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question         ToeicQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedChoice   ToeicChoice?  @relation("ToeicAttemptSelectedChoice", fields: [selectedChoiceId], references: [id], onDelete: SetNull)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@unique([attemptId, questionId])
+}
+
+model ToeicUserWrongQuestion {
+  id            String        @id @default(cuid())
+  userId        String
+  questionId    String
+  lastAttemptId String
+  wrongCount    Int           @default(1)
+  lastWrongAt   DateTime      @default(now())
+  resolvedAt    DateTime?
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question      ToeicQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  lastAttempt   ToeicAttempt  @relation(fields: [lastAttemptId], references: [id], onDelete: Cascade)
+  createdAt     DateTime      @default(now())
+
+  @@unique([userId, questionId])
+  @@index([userId, lastWrongAt])
+}
