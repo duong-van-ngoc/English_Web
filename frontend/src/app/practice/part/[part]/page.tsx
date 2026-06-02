@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { api, isApiError } from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/media";
 import type { ToeicAttemptStartResult, ToeicQuestionSet } from "@/types";
 
 function formatTime(totalSeconds: number) {
@@ -193,24 +194,28 @@ export default function ToeicPartPracticePage() {
       ) : null}
 
       <div className="mt-6 space-y-6">
-        {questionSet.groups.map((group) => (
+        {questionSet.groups.map((group) => {
+          const audioUrl = resolveMediaUrl(group.audioUrl);
+          const imageUrl = resolveMediaUrl(group.imageUrl);
+
+          return (
           <section className="glass-panel-strong rounded-lg p-5" key={group.id}>
             {group.title ? (
               <h2 className="text-lg font-bold text-text-primary">
                 {group.title}
               </h2>
             ) : null}
-            {group.audioUrl ? (
-              <audio className="mt-4 w-full" controls src={group.audioUrl}>
+            {audioUrl ? (
+              <audio className="mt-4 w-full" controls src={audioUrl}>
                 <track kind="captions" />
               </audio>
             ) : null}
-            {group.imageUrl ? (
+            {imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 alt={group.title ?? "TOEIC question image"}
                 className="mt-4 max-h-[420px] w-full rounded-lg object-contain"
-                src={group.imageUrl}
+                src={imageUrl}
               />
             ) : null}
             {group.passageContent ? (
@@ -259,7 +264,8 @@ export default function ToeicPartPracticePage() {
               ))}
             </div>
           </section>
-        ))}
+          );
+        })}
       </div>
 
       <div className="sticky bottom-0 mt-8 border-t border-border bg-background/95 py-4 backdrop-blur-xl">

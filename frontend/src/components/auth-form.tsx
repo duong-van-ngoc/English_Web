@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 
 import { PrimaryButton } from "@/components/primary-button";
 import { api, isApiError } from "@/lib/api";
-import { setAccessToken } from "@/lib/auth";
+import { useAuth } from "@/hooks/use-auth";
 import { loginSchema, type LoginFormValues } from "@/schemas/login.schema";
 import {
   registerSchema,
@@ -50,6 +50,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
 function LoginForm() {
   const router = useRouter();
+  const { login } = useAuth();
   const [feedback, setFeedback] = useState("");
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -64,9 +65,8 @@ function LoginForm() {
 
     try {
       const result = await api.login(values);
-      setAccessToken(result.accessToken);
+      await login(result.accessToken);
       router.push("/me");
-      router.refresh();
     } catch (error) {
       setFeedback(getSubmitError(error, "Đăng nhập thất bại."));
     }

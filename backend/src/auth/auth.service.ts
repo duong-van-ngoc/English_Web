@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -16,6 +17,7 @@ import type {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly publicUserSelect = {
     id: true,
     email: true,
@@ -40,6 +42,7 @@ export class AuthService {
     });
 
     if (existedUser) {
+      this.logger.warn(`Register rejected for duplicated email: ${email}`);
       throw new ConflictException('Email already exists');
     }
 
@@ -72,12 +75,14 @@ export class AuthService {
     });
 
     if (!user) {
+      this.logger.warn(`Login failed for unknown email: ${email}`);
       throw new UnauthorizedException('Invalid email or password');
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
 
     if (!isPasswordValid) {
+      this.logger.warn(`Login failed for email: ${email}`);
       throw new UnauthorizedException('Invalid email or password');
     }
 

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 const TOEIC_PARTS = [
@@ -95,6 +99,7 @@ export class PracticeService {
             audioUrl: true,
             imageUrl: true,
             passageContent: true,
+            transcript: true,
             order: true,
             questions: {
               select: {
@@ -148,7 +153,9 @@ export class PracticeService {
     });
 
     if (!questionSet) {
-      throw new NotFoundException(`No TOEIC practice set found for part ${part}`);
+      throw new NotFoundException(
+        `No TOEIC practice set found for part ${part}`,
+      );
     }
 
     return this.getQuestionSet(questionSet.id);

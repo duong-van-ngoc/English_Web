@@ -11,6 +11,8 @@ const navItems = [
   { href: "/admin/lessons", label: "Lessons" },
   { href: "/admin/questions", label: "Questions" },
   { href: "/admin/vocabulary", label: "Vocabulary" },
+  { href: "/admin/files", label: "Files" },
+  { href: "/admin/toeic/groups", label: "TOEIC Media" },
 ];
 
 export default function AdminLayout({

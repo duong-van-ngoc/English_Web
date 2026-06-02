@@ -3,10 +3,12 @@ import Link from "next/link";
 import { AuthHeaderActions } from "@/components/auth-header-actions";
 
 const navItems = [
-  { href: "/", label: "Trang chủ" },
-  { href: "/courses", label: "Khóa học" },
+  { href: "/", label: "Home" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/courses", label: "Courses" },
   { href: "/practice", label: "TOEIC" },
-  { href: "/me", label: "Hồ sơ" },
+  { href: "/review", label: "Review" },
+  { href: "/stats", label: "Stats" },
 ];
 
 export function AppHeader() {
@@ -22,7 +24,7 @@ export function AppHeader() {
           </span>
         </Link>
 
-        <nav aria-label="Điều hướng chính" className="hidden items-center gap-1 md:flex">
+        <nav aria-label="Main navigation" className="hidden items-center gap-1 md:flex">
           {navItems.map((item) => (
             <Link
               className="rounded-md px-3 py-2 text-sm font-medium text-text-secondary hover:bg-surface hover:text-text-primary"
@@ -38,12 +40,12 @@ export function AppHeader() {
       </div>
 
       <nav
-        aria-label="Điều hướng chính trên mobile"
-        className="mx-auto flex w-full max-w-6xl gap-2 px-4 pb-3 sm:px-6 md:hidden"
+        aria-label="Mobile main navigation"
+        className="mx-auto flex w-full max-w-6xl gap-2 overflow-x-auto px-4 pb-3 sm:px-6 md:hidden"
       >
         {navItems.map((item) => (
           <Link
-            className="flex-1 rounded-md border border-border bg-surface-strong px-3 py-2 text-center text-sm font-semibold text-text-secondary hover:border-primary/40 hover:text-primary"
+            className="min-w-fit flex-1 rounded-md border border-border bg-surface-strong px-3 py-2 text-center text-sm font-semibold text-text-secondary hover:border-primary/40 hover:text-primary"
             href={item.href}
             key={item.href}
           >

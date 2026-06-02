@@ -31,6 +31,8 @@ export interface LoginResult {
 
 export type ContentStatus = "DRAFT" | "PUBLISHED";
 
+export type FileKind = "AUDIO" | "IMAGE";
+
 export type QuestionType =
   | "SINGLE_CHOICE"
   | "MULTIPLE_CHOICE"
@@ -102,6 +104,38 @@ export interface Course {
   status: ContentStatus;
   publishedAt?: string | null;
   lessons?: Lesson[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FileAsset {
+  id: string;
+  originalName: string;
+  storageKey: string;
+  mimeType: string;
+  size: number;
+  kind: FileKind;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FileAssetListResult {
+  items: FileAsset[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface Progress {
+  id: string;
+  userId: string;
+  courseId: string;
+  lessonId?: string | null;
+  completed: boolean;
+  score?: number | null;
+  course?: Course;
+  lesson?: Lesson | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -213,6 +247,46 @@ export interface ToeicQuestionSet {
   groups: ToeicQuestionGroup[];
 }
 
+export interface AdminToeicQuestionSet {
+  id: string;
+  title: string;
+  description?: string | null;
+  part: number;
+  type: "PRACTICE" | "MOCK_TEST";
+  duration?: number | null;
+  version: number;
+  _count: {
+    groups: number;
+  };
+}
+
+export interface AdminToeicQuestionGroup {
+  id: string;
+  questionSetId: string;
+  title?: string | null;
+  audioUrl?: string | null;
+  imageUrl?: string | null;
+  passageContent?: string | null;
+  transcript?: string | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+  questionSet: {
+    id: string;
+    title: string;
+    part: number;
+    type: "PRACTICE" | "MOCK_TEST";
+  };
+  questions: Array<{
+    id: string;
+    content: string;
+    order: number;
+  }>;
+  _count: {
+    questions: number;
+  };
+}
+
 export type ToeicAttemptStatus = "IN_PROGRESS" | "SUBMITTED" | "EXPIRED";
 
 export interface ToeicAttemptStartResult {
@@ -258,4 +332,106 @@ export interface ToeicAttemptHistoryItem {
     title: string;
     part: number;
   };
+}
+
+export interface DashboardSummary {
+  profile: {
+    userId: string;
+    name: string | null;
+    email: string;
+  };
+  learning: {
+    totalCourses: number;
+    totalLessons: number;
+    completedLessons: number;
+    completionRate: number;
+    lastStudiedAt: string | null;
+  };
+  toeic: {
+    totalAttempts: number;
+    totalQuestionsAnswered: number;
+    totalCorrectAnswers: number;
+    totalWrongAnswers: number;
+    accuracyRate: number;
+    weakestPart: {
+      part: number;
+      title: string;
+      wrongRate: number;
+      answeredQuestions: number;
+    } | null;
+  };
+  review: {
+    dueVocabularyCount: number;
+    wrongQuestionCount: number;
+  };
+  recommendation: {
+    type:
+      | "LESSON"
+      | "TOEIC_PART"
+      | "VOCABULARY_REVIEW"
+      | "WRONG_QUESTION_REVIEW";
+    title: string;
+    href: string;
+    reason: string;
+  } | null;
+}
+
+export interface StatsSummary {
+  byPart: Array<{
+    part: number;
+    title: string;
+    attempts: number;
+    answeredQuestions: number;
+    correctAnswers: number;
+    wrongAnswers: number;
+    accuracyRate: number;
+    lastSubmittedAt: string | null;
+  }>;
+  recentAttempts: Array<{
+    attemptId: string;
+    questionSetTitle: string;
+    part: number;
+    score: number;
+    correctAnswers: number;
+    wrongAnswers: number;
+    submittedAt: string | null;
+  }>;
+}
+
+export interface ReviewQueue {
+  vocabulary: Array<{
+    id: string;
+    vocabularyId: string;
+    word: string;
+    meaning: string;
+    example: string | null;
+    reviewCount: number;
+    nextReviewAt: string;
+  }>;
+  toeicWrongQuestions: Array<{
+    id: string;
+    questionId: string;
+    part: number;
+    questionSetTitle: string;
+    content: string;
+    wrongCount: number;
+    lastWrongAt: string;
+    choices: Array<{
+      id: string;
+      label: string;
+      content: string;
+      isCorrect: boolean;
+    }>;
+    explanation: string | null;
+  }>;
+}
+
+export interface VocabularyReviewResult {
+  id: string;
+  vocabularyId: string;
+  status: "DUE" | "LEARNING" | "MASTERED";
+  easeLevel: number;
+  reviewCount: number;
+  lastReviewedAt: string | null;
+  nextReviewAt: string;
 }

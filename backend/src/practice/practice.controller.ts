@@ -1,4 +1,11 @@
-import { Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { ApiResponse } from '../common/interfaces/api-response.interface';
 import { PracticeService } from './practice.service';
@@ -20,7 +27,9 @@ export class PracticeController {
   @Get('question-sets')
   async getQuestionSets(
     @Query('part') part?: string,
-  ): Promise<ApiResponse<Awaited<ReturnType<PracticeService['getQuestionSets']>>>> {
+  ): Promise<
+    ApiResponse<Awaited<ReturnType<PracticeService['getQuestionSets']>>>
+  > {
     const questionSets = await this.practiceService.getQuestionSets(
       part ? Number(part) : undefined,
     );
@@ -36,7 +45,9 @@ export class PracticeController {
   @Get('question-sets/:id')
   async getQuestionSet(
     @Param('id') id: string,
-  ): Promise<ApiResponse<Awaited<ReturnType<PracticeService['getQuestionSet']>>>> {
+  ): Promise<
+    ApiResponse<Awaited<ReturnType<PracticeService['getQuestionSet']>>>
+  > {
     const questionSet = await this.practiceService.getQuestionSet(id);
 
     return {
@@ -51,9 +62,12 @@ export class PracticeController {
   async getQuestionsByPart(
     @Query('part', ParseIntPipe) part: number,
   ): Promise<
-    ApiResponse<Awaited<ReturnType<PracticeService['getFirstQuestionSetByPart']>>>
+    ApiResponse<
+      Awaited<ReturnType<PracticeService['getFirstQuestionSetByPart']>>
+    >
   > {
-    const questionSet = await this.practiceService.getFirstQuestionSetByPart(part);
+    const questionSet =
+      await this.practiceService.getFirstQuestionSetByPart(part);
 
     return {
       success: true,

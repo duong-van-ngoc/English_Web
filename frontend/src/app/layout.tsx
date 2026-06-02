@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { AppHeader } from "@/components/app-header";
+import { AuthProvider } from "@/contexts/auth-context";
 
 import "./globals.css";
 
@@ -30,21 +31,27 @@ export default function RootLayout({
       lang="vi"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+      </head>
       <body
         suppressHydrationWarning
         className="min-h-full bg-background text-text-primary"
       >
-        <div className="flex min-h-screen flex-col">
-          <AppHeader />
-          <main className="flex-1">{children}</main>
-          <footer className="border-t border-border bg-surface/80 backdrop-blur-xl">
-            <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-text-secondary sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-              <span>English Learning Explorer</span>
-              <span>Phase 6 - Admin Content MVP</span>
-            </div>
-          </footer>
-        </div>
+        <AuthProvider>
+          <div className="flex min-h-screen flex-col">
+            <AppHeader />
+            <main className="flex-1">{children}</main>
+            <footer className="border-t border-border bg-surface/80 backdrop-blur-xl">
+              <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-text-secondary sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+                <span>English Learning Explorer</span>
+                <span>Phase 6 - Admin Content MVP</span>
+              </div>
+            </footer>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );
 }
+

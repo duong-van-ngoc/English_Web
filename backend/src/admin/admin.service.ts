@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { ContentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { QueryAdminToeicGroupsDto } from './dto/query-admin-toeic-groups.dto';
+import { UpdateToeicQuestionGroupMediaDto } from './dto/update-toeic-question-group-media.dto';
 
 type ContentType = 'COURSE' | 'LESSON' | 'VOCABULARY' | 'QUESTION';
 
@@ -337,6 +339,135 @@ export class AdminService {
     return vocabulary;
   }
 
+  async findToeicQuestionSets(part?: number) {
+    if (part !== undefined) {
+      this.ensureValidToeicPart(part);
+    }
+
+    return this.prisma.toeicQuestionSet.findMany({
+      where: {
+        ...(part ? { part } : {}),
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        part: true,
+        type: true,
+        duration: true,
+        version: true,
+        _count: {
+          select: {
+            groups: true,
+          },
+        },
+      },
+      orderBy: [{ part: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  async findToeicQuestionGroups(query: QueryAdminToeicGroupsDto) {
+    if (query.part !== undefined) {
+      this.ensureValidToeicPart(query.part);
+    }
+
+    return this.prisma.toeicQuestionGroup.findMany({
+      where: {
+        ...(query.questionSetId ? { questionSetId: query.questionSetId } : {}),
+        ...(query.part ? { questionSet: { part: query.part } } : {}),
+      },
+      select: {
+        id: true,
+        questionSetId: true,
+        title: true,
+        audioUrl: true,
+        imageUrl: true,
+        passageContent: true,
+        transcript: true,
+        order: true,
+        createdAt: true,
+        updatedAt: true,
+        questionSet: {
+          select: {
+            id: true,
+            title: true,
+            part: true,
+            type: true,
+          },
+        },
+        questions: {
+          select: {
+            id: true,
+            content: true,
+            order: true,
+          },
+          orderBy: {
+            order: 'asc',
+          },
+        },
+        _count: {
+          select: {
+            questions: true,
+          },
+        },
+      },
+      orderBy: [{ questionSetId: 'asc' }, { order: 'asc' }],
+    });
+  }
+
+  async updateToeicQuestionGroupMedia(
+    id: string,
+    dto: UpdateToeicQuestionGroupMediaDto,
+  ) {
+    await this.ensureToeicQuestionGroupExists(id);
+
+    return this.prisma.toeicQuestionGroup.update({
+      where: {
+        id,
+      },
+      data: {
+        audioUrl: this.normalizeOptionalText(dto.audioUrl),
+        imageUrl: this.normalizeOptionalText(dto.imageUrl),
+        transcript: this.normalizeOptionalText(dto.transcript),
+      },
+      select: {
+        id: true,
+        questionSetId: true,
+        title: true,
+        audioUrl: true,
+        imageUrl: true,
+        passageContent: true,
+        transcript: true,
+        order: true,
+        createdAt: true,
+        updatedAt: true,
+        questionSet: {
+          select: {
+            id: true,
+            title: true,
+            part: true,
+            type: true,
+          },
+        },
+        questions: {
+          select: {
+            id: true,
+            content: true,
+            order: true,
+          },
+          orderBy: {
+            order: 'asc',
+          },
+        },
+        _count: {
+          select: {
+            questions: true,
+          },
+        },
+      },
+    });
+  }
+
   private parseStatus(status?: string): ContentStatus | undefined {
     if (!status) {
       return undefined;
@@ -347,5 +478,38 @@ export class AdminService {
     }
 
     return status;
+  }
+
+  private normalizeOptionalText(
+    value?: string | null,
+  ): string | null | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (value === null) {
+      return null;
+    }
+
+    const normalized = value.trim();
+
+    return normalized.length > 0 ? normalized : null;
+  }
+
+  private async ensureToeicQuestionGroupExists(id: string) {
+    const group = await this.prisma.toeicQuestionGroup.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!group) {
+      throw new NotFoundException('TOEIC question group not found');
+    }
+  }
+
+  private ensureValidToeicPart(part: number): void {
+    if (!Number.isInteger(part) || part < 1 || part > 7) {
+      throw new BadRequestException('TOEIC part must be a number from 1 to 7');
+    }
   }
 }

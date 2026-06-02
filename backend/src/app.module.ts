@@ -12,6 +12,9 @@ import { AttemptsModule } from './attempts/attempts.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { PracticeModule } from './practice/practice.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { ReviewModule } from './review/review.module';
+import { FilesModule } from './files/files.module';
 
 /**
  * AppModule
@@ -33,6 +36,9 @@ import { PracticeModule } from './practice/practice.module';
     AuthModule,
     AdminModule,
     PracticeModule,
+    DashboardModule,
+    ReviewModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

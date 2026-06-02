@@ -9,8 +9,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Course, Lesson, Progress } from '@prisma/client';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import type { ApiResponse } from '../common/interfaces/api-response.interface';
+import { CompleteLessonDto } from './dto/complete-lesson.dto';
 import { CreateProgressDto } from './dto/create-progress.dto';
 import { UpdateProgressDto } from './dto/update-progress.dto';
 import { ProgressService } from './progress.service';
@@ -24,6 +27,25 @@ type ProgressWithRelations = Progress & {
 @Controller()
 export class ProgressController {
   constructor(private readonly progressService: ProgressService) {}
+
+  @Post('lessons/:lessonId/complete')
+  async completeLesson(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('lessonId') lessonId: string,
+    @Body() dto: CompleteLessonDto,
+  ): Promise<ApiResponse<ProgressWithRelations>> {
+    const progress = await this.progressService.completeLesson(
+      user.id,
+      lessonId,
+      dto.score,
+    );
+
+    return {
+      success: true,
+      message: 'Lesson marked as completed successfully',
+      data: progress,
+    };
+  }
 
   @Get('users/:userId/progress')
   async findByUser(

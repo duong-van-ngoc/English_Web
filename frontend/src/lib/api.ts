@@ -1,18 +1,27 @@
 import { getAccessToken } from "@/lib/auth";
 import type {
+  AdminToeicQuestionGroup,
+  AdminToeicQuestionSet,
   ApiResponse,
   AdminSummary,
   AuthUser,
   ContentStatus,
   Course,
   CoursePayload,
+  DashboardSummary,
+  FileAsset,
+  FileAssetListResult,
+  FileKind,
   LessonPayload,
   Lesson,
   LoginCredentials,
   LoginResult,
   Question,
   QuestionPayload,
+  Progress,
   RegisterPayload,
+  ReviewQueue,
+  StatsSummary,
   ToeicAttemptHistoryItem,
   ToeicAttemptResult,
   ToeicAttemptStartResult,
@@ -22,6 +31,7 @@ import type {
   ToeicQuestionSetSummary,
   Vocabulary,
   VocabularyPayload,
+  VocabularyReviewResult,
 } from "@/types";
 
 const apiOrigin = process.env.NEXT_PUBLIC_API_URL;
@@ -60,13 +70,13 @@ function getErrorMessage(payload: ErrorPayload | null, status: number): string {
 
 function withQuery(
   endpoint: string,
-  params: Record<string, string | undefined> = {},
+  params: Record<string, number | string | undefined> = {},
 ) {
   const query = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
-    if (value) {
-      query.set(key, value);
+    if (value !== undefined && value !== "") {
+      query.set(key, String(value));
     }
   });
 
@@ -80,13 +90,21 @@ async function request<TData>(
   options: RequestInit = {},
 ): Promise<TData> {
   const token = getAccessToken();
+  const headers = new Headers(options.headers);
+  const isFormDataRequest =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
+
+  if (!isFormDataRequest && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
   const response = await fetch(`${apiBaseUrl}${endpoint}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
+    headers,
     cache: options.cache ?? "no-store",
   });
 
@@ -213,6 +231,50 @@ export const api = {
     request<Vocabulary[]>(withQuery("/admin/vocabulary", params)),
   getAdminVocabularyItem: (vocabularyId: string) =>
     request<Vocabulary>(`/admin/vocabulary/${vocabularyId}`),
+  getAdminFileAssets: (params?: {
+    kind?: FileKind | "";
+    page?: number;
+    pageSize?: number;
+    search?: string;
+  }) => request<FileAssetListResult>(withQuery("/files", params)),
+  getAdminFileAsset: (fileId: string) => request<FileAsset>(`/files/${fileId}`),
+  uploadFile: (kind: FileKind, file: File) => {
+    const formData = new FormData();
+    formData.append("kind", kind);
+    formData.append("file", file);
+
+    return request<FileAsset>("/files/upload", {
+      method: "POST",
+      body: formData,
+    });
+  },
+  deleteAdminFileAsset: (fileId: string) =>
+    request<FileAsset>(`/files/${fileId}`, {
+      method: "DELETE",
+    }),
+  getAdminToeicQuestionSets: (params?: { part?: number }) =>
+    request<AdminToeicQuestionSet[]>(
+      withQuery("/admin/toeic/question-sets", params),
+    ),
+  getAdminToeicQuestionGroups: (params?: {
+    part?: number;
+    questionSetId?: string;
+  }) =>
+    request<AdminToeicQuestionGroup[]>(
+      withQuery("/admin/toeic/question-groups", params),
+    ),
+  updateAdminToeicQuestionGroupMedia: (
+    groupId: string,
+    payload: {
+      audioUrl?: string | null;
+      imageUrl?: string | null;
+      transcript?: string | null;
+    },
+  ) =>
+    request<AdminToeicQuestionGroup>(`/admin/toeic/question-groups/${groupId}/media`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
   createVocabulary: (lessonId: string, payload: VocabularyPayload) =>
     request<Vocabulary>(`/lessons/${lessonId}/vocabulary`, {
       method: "POST",
@@ -254,4 +316,28 @@ export const api = {
     request<ToeicAttemptResult>(`/attempts/${attemptId}/result`),
   getToeicAttemptHistory: () =>
     request<ToeicAttemptHistoryItem[]>("/attempts/history"),
+  getDashboard: () => request<DashboardSummary>("/dashboard"),
+  getStats: () => request<StatsSummary>("/stats"),
+  completeLesson: (lessonId: string, payload: { score?: number } = {}) =>
+    request<Progress>(`/lessons/${lessonId}/complete`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getReviewQueue: (type?: "all" | "vocabulary" | "toeic-wrong-question") =>
+    request<ReviewQueue>(withQuery("/review", { type })),
+  markVocabularyReview: (
+    vocabularyId: string,
+    result: "AGAIN" | "GOOD" | "EASY",
+  ) =>
+    request<VocabularyReviewResult>(`/review/vocabulary/${vocabularyId}/mark`, {
+      method: "POST",
+      body: JSON.stringify({ result }),
+    }),
+  resolveToeicWrongQuestion: (questionId: string) =>
+    request<{ questionId: string; resolvedAt: string }>(
+      `/review/toeic-questions/${questionId}/resolve`,
+      {
+        method: "POST",
+      },
+    ),
 };

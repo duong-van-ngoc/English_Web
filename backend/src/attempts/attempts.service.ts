@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -26,6 +27,7 @@ type AttemptWithAnswers = Attempt & {
 
 @Injectable()
 export class AttemptsService {
+  private readonly logger = new Logger(AttemptsService.name);
   private readonly attemptInclude = {
     answers: {
       include: {
@@ -123,15 +125,24 @@ export class AttemptsService {
       });
 
       if (!attempt) {
+        this.logger.warn(`TOEIC attempt not found: attemptId=${attemptId}`);
         throw new NotFoundException(`TOEIC attempt "${attemptId}" not found`);
       }
 
       if (attempt.userId !== userId) {
+        this.logger.warn(
+          `TOEIC attempt submit forbidden: attemptId=${attemptId}, actorUserId=${userId}, ownerUserId=${attempt.userId}`,
+        );
         throw new ForbiddenException('You cannot submit this TOEIC attempt');
       }
 
       if (attempt.status !== 'IN_PROGRESS') {
-        throw new BadRequestException('TOEIC attempt has already been finished');
+        this.logger.warn(
+          `TOEIC attempt already finished: attemptId=${attemptId}, status=${attempt.status}`,
+        );
+        throw new BadRequestException(
+          'TOEIC attempt has already been finished',
+        );
       }
 
       const questionMap = new Map(
@@ -140,13 +151,19 @@ export class AttemptsService {
           .map((question) => [question.id, question]),
       );
       const submittedAnswerMap = new Map(
-        dto.answers.map((answer) => [answer.questionId, answer.selectedChoiceId]),
+        dto.answers.map((answer) => [
+          answer.questionId,
+          answer.selectedChoiceId,
+        ]),
       );
 
       for (const answer of dto.answers) {
         const question = questionMap.get(answer.questionId);
 
         if (!question) {
+          this.logger.warn(
+            `TOEIC submit includes unrelated question: attemptId=${attemptId}, questionId=${answer.questionId}`,
+          );
           throw new BadRequestException(
             `Question "${answer.questionId}" does not belong to this attempt`,
           );
@@ -154,26 +171,33 @@ export class AttemptsService {
 
         if (
           answer.selectedChoiceId &&
-          !question.choices.some((choice) => choice.id === answer.selectedChoiceId)
+          !question.choices.some(
+            (choice) => choice.id === answer.selectedChoiceId,
+          )
         ) {
+          this.logger.warn(
+            `TOEIC submit includes invalid choice: attemptId=${attemptId}, questionId=${answer.questionId}, selectedChoiceId=${answer.selectedChoiceId}`,
+          );
           throw new BadRequestException(
             `Choice "${answer.selectedChoiceId}" does not belong to question "${answer.questionId}"`,
           );
         }
       }
 
-      const attemptAnswers = Array.from(questionMap.values()).map((question) => {
-        const selectedChoiceId = submittedAnswerMap.get(question.id) ?? null;
-        const selectedChoice = selectedChoiceId
-          ? question.choices.find((choice) => choice.id === selectedChoiceId)
-          : undefined;
+      const attemptAnswers = Array.from(questionMap.values()).map(
+        (question) => {
+          const selectedChoiceId = submittedAnswerMap.get(question.id) ?? null;
+          const selectedChoice = selectedChoiceId
+            ? question.choices.find((choice) => choice.id === selectedChoiceId)
+            : undefined;
 
-        return {
-          questionId: question.id,
-          selectedChoiceId,
-          isCorrect: selectedChoice?.isCorrect ?? false,
-        };
-      });
+          return {
+            questionId: question.id,
+            selectedChoiceId,
+            isCorrect: selectedChoice?.isCorrect ?? false,
+          };
+        },
+      );
       const correctAnswers = attemptAnswers.filter(
         (answer) => answer.isCorrect,
       ).length;
@@ -473,6 +497,9 @@ export class AttemptsService {
     const uniqueQuestionIds = new Set(questionIds);
 
     if (uniqueQuestionIds.size !== questionIds.length) {
+      this.logger.warn(
+        'Classic attempt rejected because of duplicated question ids',
+      );
       throw new BadRequestException('Each question can only be answered once');
     }
   }
@@ -484,7 +511,12 @@ export class AttemptsService {
     const uniqueQuestionIds = new Set(questionIds);
 
     if (uniqueQuestionIds.size !== questionIds.length) {
-      throw new BadRequestException('Each TOEIC question can only be answered once');
+      this.logger.warn(
+        'TOEIC attempt rejected because of duplicated question ids',
+      );
+      throw new BadRequestException(
+        'Each TOEIC question can only be answered once',
+      );
     }
   }
 

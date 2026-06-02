@@ -49,7 +49,9 @@ export class AttemptsController {
   @Get('attempts/history')
   async getToeicHistory(
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<ApiResponse<Awaited<ReturnType<AttemptsService['getToeicHistory']>>>> {
+  ): Promise<
+    ApiResponse<Awaited<ReturnType<AttemptsService['getToeicHistory']>>>
+  > {
     const history = await this.attemptsService.getToeicHistory(user.id);
 
     return {
@@ -67,7 +69,11 @@ export class AttemptsController {
   ): Promise<
     ApiResponse<Awaited<ReturnType<AttemptsService['submitToeicAttempt']>>>
   > {
-    const result = await this.attemptsService.submitToeicAttempt(user.id, id, dto);
+    const result = await this.attemptsService.submitToeicAttempt(
+      user.id,
+      id,
+      dto,
+    );
 
     return {
       success: true,
@@ -80,7 +86,9 @@ export class AttemptsController {
   async getToeicResult(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-  ): Promise<ApiResponse<Awaited<ReturnType<AttemptsService['getToeicResult']>>>> {
+  ): Promise<
+    ApiResponse<Awaited<ReturnType<AttemptsService['getToeicResult']>>>
+  > {
     const result = await this.attemptsService.getToeicResult(user.id, id);
 
     return {

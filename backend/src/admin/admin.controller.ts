@@ -1,9 +1,20 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import type { ApiResponse } from '../common/interfaces/api-response.interface';
+import { QueryAdminToeicGroupsDto } from './dto/query-admin-toeic-groups.dto';
+import { QueryAdminToeicSetsDto } from './dto/query-admin-toeic-sets.dto';
+import { UpdateToeicQuestionGroupMediaDto } from './dto/update-toeic-question-group-media.dto';
 import { AdminService } from './admin.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -132,6 +143,51 @@ export class AdminController {
       success: true,
       message: 'Admin vocabulary item fetched successfully',
       data: vocabulary,
+    };
+  }
+
+  @Get('toeic/question-sets')
+  async findToeicQuestionSets(
+    @Query() query: QueryAdminToeicSetsDto,
+  ): Promise<ApiResponse<unknown>> {
+    const questionSets = await this.adminService.findToeicQuestionSets(
+      query.part,
+    );
+
+    return {
+      success: true,
+      message: 'Admin TOEIC question sets fetched successfully',
+      data: questionSets,
+    };
+  }
+
+  @Get('toeic/question-groups')
+  async findToeicQuestionGroups(
+    @Query() query: QueryAdminToeicGroupsDto,
+  ): Promise<ApiResponse<unknown>> {
+    const groups = await this.adminService.findToeicQuestionGroups(query);
+
+    return {
+      success: true,
+      message: 'Admin TOEIC question groups fetched successfully',
+      data: groups,
+    };
+  }
+
+  @Patch('toeic/question-groups/:id/media')
+  async updateToeicQuestionGroupMedia(
+    @Param('id') id: string,
+    @Body() dto: UpdateToeicQuestionGroupMediaDto,
+  ): Promise<ApiResponse<unknown>> {
+    const group = await this.adminService.updateToeicQuestionGroupMedia(
+      id,
+      dto,
+    );
+
+    return {
+      success: true,
+      message: 'TOEIC question group media updated successfully',
+      data: group,
     };
   }
 }

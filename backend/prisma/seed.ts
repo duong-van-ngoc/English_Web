@@ -540,6 +540,11 @@ async function main(): Promise<void> {
       },
     },
   });
+  await prisma.vocabularyReview.deleteMany({
+    where: {
+      userId: user.id,
+    },
+  });
   await prisma.progress.deleteMany({
     where: {
       userId: user.id,
@@ -645,6 +650,21 @@ async function main(): Promise<void> {
   const correctAnswer = firstQuestion.answers.find(
     (answer) => answer.isCorrect,
   );
+  const reviewVocabulary = await prisma.vocabulary.findMany({
+    where: {
+      lesson: {
+        course: {
+          slug: {
+            in: ['starter-foundation', 'toeic-vocabulary-core'],
+          },
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'asc',
+    },
+    take: 4,
+  });
 
   await prisma.progress.create({
     data: {
@@ -669,6 +689,18 @@ async function main(): Promise<void> {
             isCorrect: true,
           },
         },
+      },
+    });
+  }
+
+  for (const [index, vocabulary] of reviewVocabulary.entries()) {
+    await prisma.vocabularyReview.create({
+      data: {
+        userId: user.id,
+        vocabularyId: vocabulary.id,
+        status: index % 2 === 0 ? 'DUE' : 'LEARNING',
+        easeLevel: 2,
+        nextReviewAt: new Date(Date.now() - (index + 1) * 60 * 60 * 1000),
       },
     });
   }

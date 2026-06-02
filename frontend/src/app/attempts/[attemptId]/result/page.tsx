@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { api, isApiError } from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/media";
 import type { ToeicAttemptResult } from "@/types";
 
 export default function ToeicAttemptResultPage() {
@@ -120,12 +121,29 @@ export default function ToeicAttemptResultPage() {
       </div>
 
       <div className="mt-8 space-y-6">
-        {result.groups.map((group) => (
+        {result.groups.map((group) => {
+          const audioUrl = resolveMediaUrl(group.audioUrl);
+          const imageUrl = resolveMediaUrl(group.imageUrl);
+
+          return (
           <section className="glass-panel-strong rounded-lg p-5" key={group.id}>
             {group.title ? (
               <h2 className="text-lg font-bold text-text-primary">
                 {group.title}
               </h2>
+            ) : null}
+            {audioUrl ? (
+              <audio className="mt-4 w-full" controls src={audioUrl}>
+                <track kind="captions" />
+              </audio>
+            ) : null}
+            {imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={group.title ?? "TOEIC question image"}
+                className="mt-4 max-h-[420px] w-full rounded-lg object-contain"
+                src={imageUrl}
+              />
             ) : null}
             {group.transcript ? (
               <div className="mt-4 whitespace-pre-line rounded-lg border border-border bg-white/70 p-4 text-sm leading-7 text-text-secondary">
@@ -201,7 +219,8 @@ export default function ToeicAttemptResultPage() {
               ))}
             </div>
           </section>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

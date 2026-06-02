@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Course, Lesson, Progress } from '@prisma/client';
+import {
+  ContentStatus,
+  type Course,
+  type Lesson,
+  type Progress,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProgressDto } from './dto/create-progress.dto';
 import { UpdateProgressDto } from './dto/update-progress.dto';
@@ -17,6 +22,67 @@ export class ProgressService {
   };
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async completeLesson(
+    userId: string,
+    lessonId: string,
+    score?: number,
+  ): Promise<ProgressWithRelations> {
+    await this.ensureUserExists(userId);
+
+    const lesson = await this.prisma.lesson.findFirst({
+      where: {
+        id: lessonId,
+        status: ContentStatus.PUBLISHED,
+        course: {
+          status: ContentStatus.PUBLISHED,
+        },
+      },
+      select: {
+        id: true,
+        courseId: true,
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException(`Lesson with id "${lessonId}" not found`);
+    }
+
+    const existingProgress = await this.prisma.progress.findFirst({
+      where: {
+        userId,
+        courseId: lesson.courseId,
+        lessonId: lesson.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (existingProgress) {
+      return this.prisma.progress.update({
+        where: {
+          id: existingProgress.id,
+        },
+        data: {
+          completed: true,
+          score,
+        },
+        include: this.progressInclude,
+      });
+    }
+
+    return this.prisma.progress.create({
+      data: {
+        userId,
+        courseId: lesson.courseId,
+        lessonId: lesson.id,
+        completed: true,
+        score,
+      },
+      include: this.progressInclude,
+    });
+  }
 
   async findByUser(userId: string): Promise<ProgressWithRelations[]> {
     await this.ensureUserExists(userId);

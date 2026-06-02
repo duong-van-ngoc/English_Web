@@ -39,6 +39,17 @@ enum ToeicAttemptStatus {
   EXPIRED
 }
 
+enum ReviewStatus {
+  DUE
+  LEARNING
+  MASTERED
+}
+
+enum FileKind {
+  AUDIO
+  IMAGE
+}
+
 model User {
   id                  String                   @id @default(cuid())
   email               String                   @unique
@@ -49,6 +60,7 @@ model User {
   attempts            Attempt[]
   toeicAttempts       ToeicAttempt[]
   toeicWrongQuestions ToeicUserWrongQuestion[]
+  vocabularyReviews   VocabularyReview[]
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
 }
@@ -85,17 +97,30 @@ model Lesson {
   @@unique([courseId, order])
 }
 
+model FileAsset {
+  id           String   @id @default(cuid())
+  originalName String
+  storageKey   String
+  mimeType     String
+  size         Int
+  kind         FileKind
+  url          String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model Vocabulary {
-  id        String   @id @default(cuid())
+  id        String             @id @default(cuid())
   lessonId  String
   word      String
   meaning   String
   phonetic  String?
   example   String?
   audioUrl  String?
-  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  lesson    Lesson             @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  reviews   VocabularyReview[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 }
 
 model Question {
@@ -283,4 +308,22 @@ model ToeicUserWrongQuestion {
 
   @@unique([userId, questionId])
   @@index([userId, lastWrongAt])
+}
+
+model VocabularyReview {
+  id             String       @id @default(cuid())
+  userId         String
+  vocabularyId   String
+  status         ReviewStatus @default(DUE)
+  easeLevel      Int          @default(2)
+  reviewCount    Int          @default(0)
+  lastReviewedAt DateTime?
+  nextReviewAt   DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabulary     Vocabulary   @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([userId, vocabularyId])
+  @@index([userId, status, nextReviewAt])
 }
