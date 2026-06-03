@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { PrimaryButton } from "@/components/primary-button";
 import { api, isApiError } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
 import { loginSchema, type LoginFormValues } from "@/schemas/login.schema";
@@ -52,6 +51,7 @@ function LoginForm() {
   const router = useRouter();
   const { login } = useAuth();
   const [feedback, setFeedback] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -74,42 +74,68 @@ function LoginForm() {
 
   return (
     <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
-      <label className="block">
-        <span className="text-sm font-semibold text-text-primary">Email</span>
-        <input
-          autoComplete="email"
-          className="mt-2 h-11 w-full rounded-md border border-border bg-surface-strong px-3 text-sm text-text-primary outline-none transition placeholder:text-text-secondary/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          placeholder="you@example.com"
-          type="email"
-          {...form.register("email")}
-        />
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-semibold text-text-primary ml-1" htmlFor="email">
+          Email
+        </label>
+        <div className="relative flex items-center">
+          <span className="material-symbols-outlined absolute left-4 text-text-secondary/70" aria-hidden="true">
+            mail
+          </span>
+          <input
+            id="email"
+            autoComplete="email"
+            className="input-glass w-full h-12 pl-12 pr-4 rounded-xl text-sm text-text-primary placeholder:text-text-secondary/50"
+            placeholder="example@gmail.com"
+            type="email"
+            {...form.register("email")}
+          />
+        </div>
         <FieldError message={form.formState.errors.email?.message} />
-      </label>
+      </div>
 
-      <label className="block">
-        <span className="text-sm font-semibold text-text-primary">Mật khẩu</span>
-        <input
-          autoComplete="current-password"
-          className="mt-2 h-11 w-full rounded-md border border-border bg-surface-strong px-3 text-sm text-text-primary outline-none transition placeholder:text-text-secondary/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          placeholder="Tối thiểu 6 ký tự"
-          type="password"
-          {...form.register("password")}
-        />
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-semibold text-text-primary ml-1" htmlFor="password">
+          Mật khẩu
+        </label>
+        <div className="relative flex items-center">
+          <span className="material-symbols-outlined absolute left-4 text-text-secondary/70" aria-hidden="true">
+            lock
+          </span>
+          <input
+            id="password"
+            autoComplete="current-password"
+            className="input-glass w-full h-12 pl-12 pr-12 rounded-xl text-sm text-text-primary placeholder:text-text-secondary/50"
+            placeholder="Tối thiểu 6 ký tự"
+            type={showPassword ? "text" : "password"}
+            {...form.register("password")}
+          />
+          <button
+            type="button"
+            className="absolute right-4 text-text-secondary/70 hover:text-primary transition-colors focus:outline-none"
+            onClick={() => setShowPassword(!showPassword)}
+            title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+          >
+            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+              {showPassword ? "visibility_off" : "visibility"}
+            </span>
+          </button>
+        </div>
         <FieldError message={form.formState.errors.password?.message} />
-      </label>
+      </div>
 
-      <PrimaryButton
-        className="w-full"
+      <button
+        className="w-full bg-gradient-to-r from-primary to-secondary text-white font-semibold py-3.5 rounded-xl shadow-lg hover:shadow-primary/20 active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-80"
         disabled={form.formState.isSubmitting}
         type="submit"
       >
         {form.formState.isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
-      </PrimaryButton>
+      </button>
 
       {feedback ? (
         <p
           aria-live="polite"
-          className="rounded-md border border-error/25 bg-error/10 p-3 text-sm leading-6 text-error"
+          className="rounded-xl border border-error/25 bg-error/10 p-3 text-sm leading-6 text-error"
         >
           {feedback}
         </p>
@@ -121,6 +147,7 @@ function LoginForm() {
 function RegisterForm() {
   const router = useRouter();
   const [feedback, setFeedback] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -144,54 +171,88 @@ function RegisterForm() {
 
   return (
     <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
-      <label className="block">
-        <span className="text-sm font-semibold text-text-primary">Họ tên</span>
-        <input
-          autoComplete="name"
-          className="mt-2 h-11 w-full rounded-md border border-border bg-surface-strong px-3 text-sm text-text-primary outline-none transition placeholder:text-text-secondary/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          placeholder="Nguyễn Văn A"
-          type="text"
-          {...form.register("name")}
-        />
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-semibold text-text-primary ml-1" htmlFor="name">
+          Họ tên
+        </label>
+        <div className="relative flex items-center">
+          <span className="material-symbols-outlined absolute left-4 text-text-secondary/70" aria-hidden="true">
+            person
+          </span>
+          <input
+            id="name"
+            autoComplete="name"
+            className="input-glass w-full h-12 pl-12 pr-4 rounded-xl text-sm text-text-primary placeholder:text-text-secondary/50"
+            placeholder="Nguyễn Văn A"
+            type="text"
+            {...form.register("name")}
+          />
+        </div>
         <FieldError message={form.formState.errors.name?.message} />
-      </label>
+      </div>
 
-      <label className="block">
-        <span className="text-sm font-semibold text-text-primary">Email</span>
-        <input
-          autoComplete="email"
-          className="mt-2 h-11 w-full rounded-md border border-border bg-surface-strong px-3 text-sm text-text-primary outline-none transition placeholder:text-text-secondary/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          placeholder="you@example.com"
-          type="email"
-          {...form.register("email")}
-        />
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-semibold text-text-primary ml-1" htmlFor="email">
+          Email
+        </label>
+        <div className="relative flex items-center">
+          <span className="material-symbols-outlined absolute left-4 text-text-secondary/70" aria-hidden="true">
+            mail
+          </span>
+          <input
+            id="email"
+            autoComplete="email"
+            className="input-glass w-full h-12 pl-12 pr-4 rounded-xl text-sm text-text-primary placeholder:text-text-secondary/50"
+            placeholder="example@gmail.com"
+            type="email"
+            {...form.register("email")}
+          />
+        </div>
         <FieldError message={form.formState.errors.email?.message} />
-      </label>
+      </div>
 
-      <label className="block">
-        <span className="text-sm font-semibold text-text-primary">Mật khẩu</span>
-        <input
-          autoComplete="new-password"
-          className="mt-2 h-11 w-full rounded-md border border-border bg-surface-strong px-3 text-sm text-text-primary outline-none transition placeholder:text-text-secondary/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          placeholder="Tối thiểu 6 ký tự"
-          type="password"
-          {...form.register("password")}
-        />
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-semibold text-text-primary ml-1" htmlFor="password">
+          Mật khẩu
+        </label>
+        <div className="relative flex items-center">
+          <span className="material-symbols-outlined absolute left-4 text-text-secondary/70" aria-hidden="true">
+            lock
+          </span>
+          <input
+            id="password"
+            autoComplete="new-password"
+            className="input-glass w-full h-12 pl-12 pr-12 rounded-xl text-sm text-text-primary placeholder:text-text-secondary/50"
+            placeholder="Tối thiểu 6 ký tự"
+            type={showPassword ? "text" : "password"}
+            {...form.register("password")}
+          />
+          <button
+            type="button"
+            className="absolute right-4 text-text-secondary/70 hover:text-primary transition-colors focus:outline-none"
+            onClick={() => setShowPassword(!showPassword)}
+            title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+          >
+            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+              {showPassword ? "visibility_off" : "visibility"}
+            </span>
+          </button>
+        </div>
         <FieldError message={form.formState.errors.password?.message} />
-      </label>
+      </div>
 
-      <PrimaryButton
-        className="w-full"
+      <button
+        className="w-full bg-gradient-to-r from-primary to-secondary text-white font-semibold py-3.5 rounded-xl shadow-lg hover:shadow-primary/20 active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-80"
         disabled={form.formState.isSubmitting}
         type="submit"
       >
         {form.formState.isSubmitting ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
-      </PrimaryButton>
+      </button>
 
       {feedback ? (
         <p
           aria-live="polite"
-          className="rounded-md border border-error/25 bg-error/10 p-3 text-sm leading-6 text-error"
+          className="rounded-xl border border-error/25 bg-error/10 p-3 text-sm leading-6 text-error"
         >
           {feedback}
         </p>
