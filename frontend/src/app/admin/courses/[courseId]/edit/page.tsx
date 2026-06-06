@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 
-import { CourseForm } from "@/components/admin/course-form";
+import { CourseForm } from "@/features/admin/components/course-form";
 
 export default function EditCoursePage() {
   const params = useParams<{ courseId: string }>();

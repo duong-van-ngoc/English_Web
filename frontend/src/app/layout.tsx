@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
-import { AppHeader } from "@/components/app-header";
+import { AppHeader } from "@/components/layout/app-header";
 import { AuthProvider } from "@/contexts/auth-context";
+import { QueryProvider } from "@/providers/query-provider";
 
 import "./globals.css";
 
@@ -17,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "English Learning Explorer",
+  title: "English Tobi",
   description: "Lộ trình học tiếng Anh nền tảng cho người mới bắt đầu luyện TOEIC.",
 };
 
@@ -38,18 +39,19 @@ export default function RootLayout({
         suppressHydrationWarning
         className="min-h-full bg-background text-text-primary"
       >
-        <AuthProvider>
-          <div className="flex min-h-screen flex-col">
-            <AppHeader />
-            <main className="flex-1">{children}</main>
-            <footer className="border-t border-border bg-surface/80 backdrop-blur-xl">
-              <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-text-secondary sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-                <span>English Learning Explorer</span>
-                <span>Phase 6 - Admin Content MVP</span>
-              </div>
-            </footer>
-          </div>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <div className="flex min-h-screen flex-col">
+              <AppHeader />
+              <main className="flex-1">{children}</main>
+              <footer className="border-t border-border bg-surface/80 backdrop-blur-xl">
+                <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-text-secondary sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+                  <span>English ToBi</span>
+                </div>
+              </footer>
+            </div>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

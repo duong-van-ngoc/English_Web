@@ -6,6 +6,7 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { createPrismaAdapter } from '../src/prisma/prisma-adapter';
+import { VSTEP_SEED_TOPICS } from './vstep-seed-data';
 
 const prisma = new PrismaClient({
   adapter: createPrismaAdapter(),
@@ -617,6 +618,62 @@ async function main(): Promise<void> {
                 },
               })),
             },
+          })),
+        },
+      },
+    });
+  }
+
+  // Seed VSTEP Course and Topics
+  const vstepCourse = await prisma.course.upsert({
+    where: { slug: 'on-thi-vstep-b1' },
+    update: {
+      title: 'Ôn thi VSTEP B1',
+      level: 'vstep',
+      description: 'Khóa học luyện thi VSTEP B1 đầy đủ 4 kỹ năng',
+      status: ContentStatus.PUBLISHED,
+      publishedAt,
+    },
+    create: {
+      title: 'Ôn thi VSTEP B1',
+      slug: 'on-thi-vstep-b1',
+      level: 'vstep',
+      description: 'Khóa học luyện thi VSTEP B1 đầy đủ 4 kỹ năng',
+      status: ContentStatus.PUBLISHED,
+      publishedAt,
+    },
+  });
+
+  // Clear existing topics for this course to start clean on seed
+  await prisma.vocabularyTopic.deleteMany({
+    where: { courseId: vstepCourse.id },
+  });
+
+  for (const [topicIndex, topicSeed] of VSTEP_SEED_TOPICS.entries()) {
+    await prisma.vocabularyTopic.create({
+      data: {
+        courseId: vstepCourse.id,
+        name: topicSeed.name,
+        slug: topicSeed.id,
+        description: topicSeed.description,
+        icon: topicSeed.icon,
+        status: topicSeed.status,
+        order: topicIndex + 1,
+        vocabularies: {
+          create: topicSeed.words.map((w, wordIndex) => ({
+            word: w.word,
+            meaning: w.meaning,
+            phonetic: w.phonetic,
+            partOfSpeech: w.partOfSpeech,
+            example: w.example,
+            exampleVi: w.exampleVi,
+            status: ContentStatus.PUBLISHED,
+            order: wordIndex + 1,
+            tags: [],
+            synonyms: w.synonyms,
+            collocations: w.collocations,
+            wordFamily: w.wordFamily,
+            commonMistakes: w.commonMistakes,
           })),
         },
       },

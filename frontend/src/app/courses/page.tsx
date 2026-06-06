@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { api } from "@/lib/api";
 import { CoursesListClient } from "./courses-list-client";
+import type { Course } from "@/types";
 
 // 1. Enable ISR (Incremental Static Regeneration) with 1-hour cache
 export const revalidate = 3600;
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CoursesPage() {
-  let courses = [];
+  let courses: Course[] = [];
 
   try {
     courses = await api.getCourses();
@@ -25,3 +26,4 @@ export default async function CoursesPage() {
 
   return <CoursesListClient initialCourses={courses} />;
 }
+

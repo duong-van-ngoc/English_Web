@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import type { ApiResponse } from '../common/interfaces/api-response.interface';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 
@@ -49,6 +51,34 @@ export class AuthController {
       success: true,
       message: 'Current user fetched successfully',
       data: user,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  async updateProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ): Promise<ApiResponse<AuthenticatedUser>> {
+    const updatedUser = await this.authService.updateProfile(user.id, updateProfileDto);
+    return {
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedUser,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/password')
+  async changePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() updatePasswordDto: UpdatePasswordDto,
+  ): Promise<ApiResponse<null>> {
+    await this.authService.changePassword(user.id, updatePasswordDto);
+    return {
+      success: true,
+      message: 'Password changed successfully',
+      data: null,
     };
   }
 }

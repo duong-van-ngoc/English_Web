@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { EmptyState } from "@/components/empty-state";
-import { useAuth } from "@/hooks/use-auth";
+import { EmptyState } from "@/components/ui/empty-state";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { api, isApiError } from "@/lib/api";
 import type { StatsSummary } from "@/types";
 

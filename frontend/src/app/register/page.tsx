@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
-import { AuthForm } from "@/components/auth-form";
+import { AuthForm } from "@/features/auth/components/auth-form";
 
 export const metadata: Metadata = {
   title: "Đăng ký | EnglishTobi",

@@ -2,6 +2,7 @@ export const COURSE_LEVELS = [
   'beginner',
   'elementary',
   'toeic-foundation',
+  'vstep',
 ] as const;
 
 export type CourseLevel = (typeof COURSE_LEVELS)[number];

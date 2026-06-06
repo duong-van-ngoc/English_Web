@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { LessonCompleteAction } from "@/components/lesson-complete-action";
-import { LessonContent } from "@/components/lesson-content";
+import { LessonCompleteAction } from "@/features/lesson/components/lesson-complete-action";
+import { LessonContent } from "@/features/lesson/components/lesson-content";
 import { api, isApiError } from "@/lib/api";
 import type { Lesson } from "@/types";
 

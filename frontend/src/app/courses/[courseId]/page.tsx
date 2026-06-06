@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { LessonList } from "@/components/lesson-list";
-import { PrimaryButton } from "@/components/primary-button";
+import { LessonList } from "@/features/lesson/components/lesson-list";
+import { PrimaryButton } from "@/components/ui/primary-button";
+import { VstepCourseDetail } from "./components/VstepCourseDetail";
 import { api, isApiError } from "@/lib/api";
 import type { Course } from "@/types";
 
@@ -14,6 +15,17 @@ interface CourseDetailPageProps {
 
 export default async function CourseDetailPage({ params }: CourseDetailPageProps) {
   const { courseId } = await params;
+
+  // Intercept VSTEP course slugs and mock IDs to render the custom modern course learning dashboard
+  if (
+    courseId === "on-thi-vstep-b1" ||
+    courseId === "vstep-speaking-writing" ||
+    courseId === "course-mock-7" ||
+    courseId === "course-mock-8"
+  ) {
+    return <VstepCourseDetail courseId={courseId} />;
+  }
+
   let course: Course;
 
   try {

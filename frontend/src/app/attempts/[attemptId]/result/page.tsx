@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { api, isApiError } from "@/lib/api";
 import { resolveMediaUrl } from "@/lib/media";
 import type { ToeicAttemptResult } from "@/types";

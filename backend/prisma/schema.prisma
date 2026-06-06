@@ -26,6 +26,7 @@ enum QuestionType {
 enum ContentStatus {
   DRAFT
   PUBLISHED
+  ARCHIVED
 }
 
 enum ToeicQuestionSetType {
@@ -55,6 +56,9 @@ model User {
   email               String                   @unique
   password            String
   name                String?
+  avatarUrl           String?
+  toeicGoal           Int?
+  level               String?
   role                UserRole                 @default(USER)
   progress            Progress[]
   attempts            Attempt[]
@@ -66,17 +70,18 @@ model User {
 }
 
 model Course {
-  id          String        @id @default(cuid())
-  title       String
-  slug        String        @unique
-  description String?
-  level       String
-  status      ContentStatus @default(DRAFT)
-  publishedAt DateTime?
-  lessons     Lesson[]
-  progress    Progress[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id               String            @id @default(cuid())
+  title            String
+  slug             String            @unique
+  description      String?
+  level            String
+  status           ContentStatus     @default(DRAFT)
+  publishedAt      DateTime?
+  lessons          Lesson[]
+  progress         Progress[]
+  vocabularyTopics VocabularyTopic[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model Lesson {
@@ -110,17 +115,39 @@ model FileAsset {
 }
 
 model Vocabulary {
-  id        String             @id @default(cuid())
-  lessonId  String
-  word      String
-  meaning   String
-  phonetic  String?
-  example   String?
-  audioUrl  String?
-  lesson    Lesson             @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  reviews   VocabularyReview[]
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id             String             @id @default(cuid())
+  lessonId       String?
+  lesson         Lesson?            @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  topicId        String?
+  topic          VocabularyTopic?   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  word           String
+  meaning        String
+  phonetic       String?
+  partOfSpeech   String?
+  example        String?
+  exampleVi      String?
+  audioUrl       String?
+  imageUrl       String?
+  level          String?
+  difficulty     String?
+  order          Int                @default(0)
+  status         ContentStatus      @default(DRAFT)
+  tags           String[]
+  synonyms       String[]
+  collocations   String[]
+  wordFamily     String[]
+  commonMistakes String[]
+  reviews        VocabularyReview[]
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([lessonId])
+  @@index([topicId])
+  @@index([status])
+  @@index([deletedAt])
 }
 
 model Question {
@@ -314,16 +341,47 @@ model VocabularyReview {
   id             String       @id @default(cuid())
   userId         String
   vocabularyId   String
-  status         ReviewStatus @default(DUE)
-  easeLevel      Int          @default(2)
+  status         ReviewStatus @default(LEARNING)
+  easeLevel      Int          @default(0)
   reviewCount    Int          @default(0)
+  isFavorite     Boolean      @default(false)
+  note           String?
+  masteredAt     DateTime?
   lastReviewedAt DateTime?
-  nextReviewAt   DateTime     @default(now())
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vocabulary     Vocabulary   @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  nextReviewAt   DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabulary     Vocabulary   @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
   @@unique([userId, vocabularyId])
-  @@index([userId, status, nextReviewAt])
+  @@index([userId])
+  @@index([vocabularyId])
+  @@index([status])
+}
+
+model VocabularyTopic {
+  id          String        @id @default(cuid())
+  courseId    String
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  description String?
+  imageUrl    String?
+  icon        String?
+  level       String?
+  order       Int           @default(0)
+  status      ContentStatus @default(DRAFT)
+  vocabularies Vocabulary[]
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([courseId])
+  @@index([status])
+  @@index([deletedAt])
+  @@unique([courseId, slug])
 }

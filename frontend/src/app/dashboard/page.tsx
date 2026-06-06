@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { EmptyState } from "@/components/empty-state";
-import { useAuth } from "@/hooks/use-auth";
+import { EmptyState } from "@/components/ui/empty-state";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { api, isApiError } from "@/lib/api";
 import type { DashboardSummary } from "@/types";
 
 export default function DashboardPage() {
-  const { status } = useAuth({ redirectToLogin: true });
+  const { status, user } = useAuth({ redirectToLogin: true });
   const [dashboard, setDashboard] = useState<DashboardSummary | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -58,6 +58,21 @@ export default function DashboardPage() {
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="glass-panel-strong rounded-lg p-6 text-text-secondary">
           Dang tai dashboard...
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "authenticated" && user?.role !== "ADMIN") {
+    return (
+      <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="glass-panel rounded-lg border-error/40 p-6">
+          <p className="text-sm font-semibold uppercase tracking-normal text-error">
+            403
+          </p>
+          <h1 className="mt-3 text-2xl font-bold text-text-primary">
+            Ban khong co quyen truy cap trang Dashboard.
+          </h1>
         </div>
       </div>
     );

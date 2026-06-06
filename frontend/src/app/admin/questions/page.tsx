@@ -11,7 +11,7 @@ import {
   ConfirmPanel,
   InlineMessage,
   StatusBadge,
-} from "@/components/admin/admin-ui";
+} from "@/features/admin/components/admin-ui";
 import { api, isApiError } from "@/lib/api";
 import type {
   AnswerPayload,
@@ -360,7 +360,7 @@ export default function AdminQuestionsPage() {
           />
         ) : null}
 
-        <section className="grid gap-4 xl:grid-cols-[1fr_420px]">
+        <section className="grid gap-4 xl:grid-cols-[1fr_320px]">
           <div className="glass-panel rounded-lg p-4">
             {isLoading ? <InlineMessage message="Dang tai questions..." /> : null}
             {!isLoading && questions.length === 0 ? (

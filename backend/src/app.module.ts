@@ -15,6 +15,7 @@ import { PracticeModule } from './practice/practice.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ReviewModule } from './review/review.module';
 import { FilesModule } from './files/files.module';
+import { VocabularyTopicsModule } from './vocabulary-topics/vocabulary-topics.module';
 
 /**
  * AppModule
@@ -39,6 +40,7 @@ import { FilesModule } from './files/files.module';
     DashboardModule,
     ReviewModule,
     FilesModule,
+    VocabularyTopicsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

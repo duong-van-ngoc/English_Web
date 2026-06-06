@@ -1,6 +1,6 @@
 "use client";
 
-import { PrimaryButton } from "@/components/primary-button";
+import { PrimaryButton } from "@/components/ui/primary-button";
 
 interface CourseDetailErrorProps {
   reset: () => void;
@@ -10,7 +10,7 @@ export default function CourseDetailError({ reset }: CourseDetailErrorProps) {
   return (
     <div className="mx-auto flex min-h-[60vh] w-full max-w-3xl flex-col items-center justify-center px-4 py-16 text-center sm:px-6 lg:px-8">
       <p className="text-sm font-semibold uppercase tracking-normal text-error">
-        Course error
+        {'Course error'}
       </p>
       <h1 className="mt-3 text-3xl font-bold tracking-normal text-text-primary">
         Không thể tải chi tiết khóa học

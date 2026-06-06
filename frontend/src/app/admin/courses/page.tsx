@@ -11,7 +11,7 @@ import {
   ConfirmPanel,
   InlineMessage,
   StatusBadge,
-} from "@/components/admin/admin-ui";
+} from "@/features/admin/components/admin-ui";
 import { api, isApiError } from "@/lib/api";
 import type { ContentStatus, Course } from "@/types";
 

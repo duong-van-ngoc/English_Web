@@ -10,7 +10,7 @@ import {
   AdminSelect,
   AdminTextarea,
   InlineMessage,
-} from "@/components/admin/admin-ui";
+} from "@/features/admin/components/admin-ui";
 import { api, isApiError } from "@/lib/api";
 import { resolveMediaUrl } from "@/lib/media";
 import type { AdminToeicQuestionGroup, AdminToeicQuestionSet, FileKind } from "@/types";

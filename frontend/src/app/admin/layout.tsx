@@ -2,17 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 
 const navItems = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/courses", label: "Courses" },
-  { href: "/admin/lessons", label: "Lessons" },
-  { href: "/admin/questions", label: "Questions" },
-  { href: "/admin/vocabulary", label: "Vocabulary" },
-  { href: "/admin/files", label: "Files" },
-  { href: "/admin/toeic/groups", label: "TOEIC Media" },
+  { href: "/admin", label: "Dashboard", icon: "dashboard" },
+  { href: "/admin/courses", label: "Courses", icon: "school" },
+  { href: "/admin/lessons", label: "Lessons", icon: "menu_book" },
+  { href: "/admin/questions", label: "Questions", icon: "quiz" },
+  { href: "/admin/vocabulary", label: "Vocabulary", icon: "translate" },
+  { href: "/admin/files", label: "Files", icon: "folder" },
+  { href: "/admin/toeic/groups", label: "TOEIC Media", icon: "perm_media" },
 ];
 
 export default function AdminLayout({
@@ -27,25 +26,15 @@ export default function AdminLayout({
     return (
       <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="glass-panel rounded-lg p-6 text-sm text-text-secondary">
-          Dang kiem tra quyen admin...
+          Đang kiểm tra quyền truy cập Admin...
         </div>
       </div>
     );
   }
 
+  // Fallback protection: If middleware somehow fails, prevent rendering and let client route handler catch
   if (status === "authenticated" && user?.role !== "ADMIN") {
-    return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="glass-panel rounded-lg border-error/40 p-6">
-          <p className="text-sm font-semibold uppercase tracking-normal text-error">
-            403
-          </p>
-          <h1 className="mt-3 text-2xl font-bold text-text-primary">
-            Ban khong co quyen truy cap khu vuc admin.
-          </h1>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (status !== "authenticated" || !user) {
@@ -53,7 +42,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-6 sm:px-6 lg:grid-cols-[240px_1fr] lg:px-8">
+    <div className="mx-auto grid w-full max-w-[1440px] gap-4 px-4 py-6 sm:px-6 lg:grid-cols-[240px_1fr] lg:px-8">
       <aside className="glass-panel-strong h-fit rounded-lg p-4">
         <div className="border-b border-border pb-4">
           <p className="text-xs font-semibold uppercase tracking-normal text-primary">
@@ -73,7 +62,7 @@ export default function AdminLayout({
 
             return (
               <Link
-                className={`rounded-md px-3 py-2 text-sm font-semibold transition ${
+                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition ${
                   isActive
                     ? "bg-primary text-white"
                     : "text-text-secondary hover:bg-surface hover:text-text-primary"
@@ -81,6 +70,7 @@ export default function AdminLayout({
                 href={item.href}
                 key={item.href}
               >
+                <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
                 {item.label}
               </Link>
             );
@@ -92,7 +82,7 @@ export default function AdminLayout({
           onClick={logout}
           type="button"
         >
-          Dang xuat
+          Đăng xuất
         </button>
       </aside>
 

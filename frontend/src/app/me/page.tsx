@@ -1,28 +1,28 @@
 "use client";
 
-import { PrimaryButton } from "@/components/primary-button";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+import { StudentProfileCard } from "./_components/student-profile-card";
+import { ProfileTabs } from "./_components/profile-tabs";
+import Link from "next/link";
 
 export default function MePage() {
   const { error, logout, status, user } = useAuth({ redirectToLogin: true });
 
   if (status === "loading") {
     return (
-      <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <section className="glass-panel-strong rounded-lg p-6">
-          <p className="text-sm font-semibold text-text-secondary">
-            Đang kiểm tra phiên đăng nhập...
-          </p>
-        </section>
+      <div className="relative min-h-screen flex justify-center items-center">
+        <div className="fixed inset-0 bg-grid pointer-events-none" />
+        <div className="relative z-10 h-10 w-10 animate-spin rounded-full border-4 border-[#004b5d] border-t-transparent" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <section className="glass-panel-strong rounded-lg p-6">
-          <p className="text-sm font-semibold text-error">
+      <div className="relative min-h-screen flex justify-center items-center px-4">
+        <div className="fixed inset-0 bg-grid pointer-events-none" />
+        <section className="relative z-10 glass-card rounded-[20px] p-6 max-w-md w-full bg-white/55 border border-white/20 text-center">
+          <p className="text-sm font-semibold text-red-600">
             {error || "Phiên đăng nhập không hợp lệ."}
           </p>
         </section>
@@ -31,62 +31,41 @@ export default function MePage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      <section className="glass-panel floating-card rounded-lg p-6 sm:p-8">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-normal text-primary">
-              Hồ sơ học viên
-            </p>
-            <h1 className="mt-3 text-3xl font-bold tracking-normal text-text-primary">
-              Xin chào {user.name || user.email}
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-text-secondary">
-              Tiếp tục lộ trình học và theo dõi thông tin tài khoản của bạn.
-            </p>
-          </div>
+    <div className="relative min-h-screen">
+      {/* Background Decor */}
+      <div className="fixed inset-0 bg-grid pointer-events-none" />
+      <div className="gradient-blob bg-[#004b5d] w-[500px] h-[500px] -top-48 -left-48" />
+      <div className="gradient-blob bg-[#520fbc] w-[400px] h-[400px] bottom-0 -right-24" />
 
-          <PrimaryButton onClick={logout} type="button" variant="secondary">
-            Đăng xuất
-          </PrimaryButton>
+      <div className="relative z-10 w-full max-w-[1280px] mx-auto px-4 md:px-16 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          {/* Left Column: Student Identity Card */}
+          <aside className="lg:col-span-1 space-y-6">
+            <StudentProfileCard user={user} onLogout={logout} />
+
+            {user.role === "ADMIN" ? (
+              <section className="glass-card rounded-[20px] border border-[#b7eaff]/30 p-6 bg-white/55 backdrop-blur-md shadow-sm">
+                <h2 className="text-lg font-bold text-[#181c20]">Admin Access</h2>
+                <p className="mb-4 mt-2 text-sm leading-6 text-[#3f484c]">
+                  Bạn có quyền quản lý khóa học, bài học, từ vựng và câu hỏi.
+                </p>
+                <Link
+                  href="/admin"
+                  className="font-bold text-[#004b5d] hover:underline hover:text-[#00687a]"
+                >
+                  Đi đến trang quản trị Admin &rarr;
+                </Link>
+              </section>
+            ) : null}
+          </aside>
+
+          {/* Right Column: Tab Workspace */}
+          <section className="lg:col-span-2">
+            <ProfileTabs />
+          </section>
         </div>
-
-        <dl className="mt-8 grid gap-4 border-t border-border pt-6 sm:grid-cols-3">
-          <div className="rounded-md border border-border bg-surface-strong p-4">
-            <dt className="text-xs font-semibold uppercase tracking-normal text-text-secondary">
-              Tên
-            </dt>
-            <dd className="mt-2 text-sm font-bold text-text-primary">
-              {user.name || "Chưa cập nhật"}
-            </dd>
-          </div>
-          <div className="rounded-md border border-border bg-surface-strong p-4">
-            <dt className="text-xs font-semibold uppercase tracking-normal text-text-secondary">
-              Email
-            </dt>
-            <dd className="mt-2 break-words text-sm font-bold text-text-primary">
-              {user.email}
-            </dd>
-          </div>
-          <div className="rounded-md border border-border bg-surface-strong p-4">
-            <dt className="text-xs font-semibold uppercase tracking-normal text-text-secondary">
-              Role
-            </dt>
-            <dd className="mt-2 text-sm font-bold text-text-primary">
-              {user.role}
-            </dd>
-          </div>
-        </dl>
-      </section>
-
-      {user.role === "ADMIN" ? (
-        <section className="mt-6 rounded-lg border border-primary/30 bg-surface-strong p-6">
-          <h2 className="text-lg font-bold text-text-primary">Admin</h2>
-          <p className="mt-2 text-sm leading-6 text-text-secondary">
-            Bạn có quyền quản lý khóa học, bài học, từ vựng và câu hỏi.
-          </p>
-        </section>
-      ) : null}
+      </div>
     </div>
   );
 }
+

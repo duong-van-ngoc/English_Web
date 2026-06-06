@@ -340,4 +340,102 @@ export const api = {
         method: "POST",
       },
     ),
+  updateProfile: (payload: { name: string; toeicGoal?: number; level?: string; avatarUrl?: string }) =>
+    request<AuthUser>("/auth/me", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  changePassword: (payload: { currentPassword: string; newPassword: string }) =>
+    request<void>("/auth/me/password", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+
+  // User Vocabulary Topics API
+  getVocabularyTopics: (courseId: string) =>
+    request<any[]>(`/courses/${courseId}/vocabulary-topics`),
+  getTopicWords: (courseId: string, topicSlug: string) =>
+    request<any>(`/courses/${courseId}/vocabulary-topics/${topicSlug}/words`),
+  updateWordReviewStatus: (
+    wordId: string,
+    payload: { status: "DUE" | "LEARNING" | "MASTERED"; easeLevel?: number; note?: string },
+  ) =>
+    request<any>(`/vocabulary/${wordId}/review`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  setWordFavorite: (wordId: string) =>
+    request<any>(`/vocabulary/${wordId}/favorite`, {
+      method: "POST",
+    }),
+  removeWordFavorite: (wordId: string) =>
+    request<any>(`/vocabulary/${wordId}/favorite`, {
+      method: "DELETE",
+    }),
+
+  // Admin Vocabulary Topics API
+  getAdminVocabularyTopics: (courseId: string) =>
+    request<any[]>(`/admin/courses/${courseId}/vocabulary-topics`),
+  getAdminVocabularyTopic: (topicId: string) =>
+    request<any>(`/admin/vocabulary-topics/${topicId}`),
+  createVocabularyTopic: (courseId: string, payload: any) =>
+    request<any>(`/admin/courses/${courseId}/vocabulary-topics`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateVocabularyTopic: (topicId: string, payload: any) =>
+    request<any>(`/admin/vocabulary-topics/${topicId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteVocabularyTopic: (topicId: string) =>
+    request<any>(`/admin/vocabulary-topics/${topicId}`, {
+      method: "DELETE",
+    }),
+  publishVocabularyTopic: (topicId: string) =>
+    request<any>(`/admin/vocabulary-topics/${topicId}/publish`, {
+      method: "PATCH",
+    }),
+  unpublishVocabularyTopic: (topicId: string) =>
+    request<any>(`/admin/vocabulary-topics/${topicId}/unpublish`, {
+      method: "PATCH",
+    }),
+  reorderVocabularyTopics: (topicIds: string[]) =>
+    request<any>("/admin/vocabulary-topics/reorder", {
+      method: "PATCH",
+      body: JSON.stringify({ topicIds }),
+    }),
+
+  // Admin Topic Words API
+  getAdminTopicWords: (topicId: string) =>
+    request<any[]>(`/admin/vocabulary-topics/${topicId}/words`),
+  getAdminTopicWord: (wordId: string) =>
+    request<any>(`/admin/vocabulary/${wordId}`),
+  createTopicWord: (topicId: string, payload: any) =>
+    request<any>(`/admin/vocabulary-topics/${topicId}/words`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateTopicWord: (wordId: string, payload: any) =>
+    request<any>(`/admin/vocabulary/${wordId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteTopicWord: (wordId: string) =>
+    request<any>(`/admin/vocabulary/${wordId}`, {
+      method: "DELETE",
+    }),
+  publishTopicWord: (wordId: string) =>
+    request<any>(`/admin/vocabulary/${wordId}/publish`, {
+      method: "PATCH",
+    }),
+  unpublishTopicWord: (wordId: string) =>
+    request<any>(`/admin/vocabulary/${wordId}/unpublish`, {
+      method: "PATCH",
+    }),
+  reorderTopicWords: (wordIds: string[]) =>
+    request<any>("/admin/vocabulary/reorder", {
+      method: "PATCH",
+      body: JSON.stringify({ wordIds }),
+    }),
 };

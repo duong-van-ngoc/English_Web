@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import { api, isApiError } from "@/lib/api";
 import { resolveMediaUrl } from "@/lib/media";
 import type { ToeicAttemptStartResult, ToeicQuestionSet } from "@/types";

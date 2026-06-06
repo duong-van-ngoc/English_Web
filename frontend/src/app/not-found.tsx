@@ -1,4 +1,4 @@
-import { PrimaryButton } from "@/components/primary-button";
+import { PrimaryButton } from "@/components/ui/primary-button";
 
 export default function NotFound() {
   return (
