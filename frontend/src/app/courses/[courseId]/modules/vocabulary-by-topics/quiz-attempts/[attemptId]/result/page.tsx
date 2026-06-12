@@ -15,6 +15,7 @@ import {
   BookMarked,
   AlertTriangle,
 } from "lucide-react";
+import { api } from "@/lib/api";
 
 interface WrongAnswer {
   questionText: string;
@@ -45,20 +46,30 @@ export default function QuizResultPage() {
   const [attempt, setAttempt] = useState<QuizAttempt | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedAttempts = localStorage.getItem("vocab_quiz_attempts");
-      if (storedAttempts) {
-        const attemptsList: QuizAttempt[] = JSON.parse(storedAttempts);
-        const found = attemptsList.find((a) => a.attemptId === attemptId);
-        if (found) {
-          setAttempt(found);
-        } else {
-          router.push(`/courses/${courseId}/modules/vocabulary-by-topics`);
-        }
-      } else {
+    if (!attemptId) return;
+    
+    async function loadAttemptResult() {
+      try {
+        const data = await api.getQuizAttempt(courseId, attemptId);
+        const mappedData: QuizAttempt = {
+          attemptId: data.id,
+          topicId: data.topicId,
+          topicName: data.topicName,
+          score: data.score,
+          correctCount: data.correctCount,
+          wrongCount: data.wrongCount,
+          isPassed: data.isPassed,
+          wrongAnswers: typeof data.wrongAnswers === 'string' ? JSON.parse(data.wrongAnswers) : (data.wrongAnswers || []),
+          timestamp: data.timestamp,
+        };
+        setAttempt(mappedData);
+      } catch (err) {
+        console.error("Failed to load quiz attempt result:", err);
         router.push(`/courses/${courseId}/modules/vocabulary-by-topics`);
       }
     }
+
+    loadAttemptResult();
   }, [attemptId, courseId, router]);
 
   if (!attempt) {

@@ -18,10 +18,32 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+
+const highlightWord = (text: string, keyword: string) => {
+  if (!text || !keyword) return text;
+  
+  const escapedKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const regex = new RegExp(`\\b(${escapedKeyword}(?:s|es|ed|ing|d)?)\\b`, 'gi');
+  
+  const parts = text.split(regex);
+  
+  return parts.map((part, index) => {
+    if (index % 2 === 1) {
+      return (
+        <span key={index} className="text-red-600 font-extrabold px-0.5 rounded bg-red-50 border border-red-100">
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
+};
 
 export default function TopicDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { status } = useAuth({ redirectToLogin: true });
   
   const courseId = (params?.courseId as string) || "on-thi-vstep-b1";
   const topicId = (params?.topicId as string) || "environment";
@@ -35,7 +57,22 @@ export default function TopicDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [editingNoteWordId, setEditingNoteWordId] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState("");
+
+  const handleSaveNote = async (wordId: string) => {
+    try {
+      await api.updateWordNote(wordId, noteText);
+      setWords(prev => prev.map(w => w.id === wordId ? { ...w, note: noteText ? noteText : null } : w));
+      setEditingNoteWordId(null);
+    } catch (err) {
+      console.error("Failed to save note:", err);
+      alert("Không thể lưu ghi chú. Vui lòng thử lại.");
+    }
+  };
+
   useEffect(() => {
+    if (status !== "authenticated") return;
     async function loadTopicData() {
       try {
         setIsLoading(true);
@@ -76,7 +113,7 @@ export default function TopicDetailPage() {
       }
     }
     loadTopicData();
-  }, [topicId, courseId, router]);
+  }, [topicId, courseId, router, status]);
 
   if (isLoading) {
     return (
@@ -141,7 +178,11 @@ export default function TopicDetailPage() {
     .filter((w) => {
       const matchesSearch = w.word.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             w.meaningVi.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesPOS = posFilter === "all" || w.partOfSpeech === posFilter;
+      const matchesPOS =
+        posFilter === "all" ||
+        w.partOfSpeech === posFilter ||
+        (posFilter === "phrasal verb" && (w.partOfSpeech === "phrasal verb" || w.partOfSpeech === "verb phrase")) ||
+        (posFilter === "phrase" && (w.partOfSpeech === "noun phrase" || w.partOfSpeech === "verb phrase" || w.partOfSpeech === "phrasal verb"));
       return matchesSearch && matchesPOS;
     })
     .sort((a, b) => {
@@ -176,6 +217,9 @@ export default function TopicDetailPage() {
       case "adjective": return "tính từ";
       case "adverb": return "trạng từ";
       case "phrase": return "cụm từ";
+      case "noun phrase": return "cụm danh từ";
+      case "verb phrase": return "cụm động từ";
+      case "phrasal verb": return "cụm động từ";
       default: return pos;
     }
   };
@@ -230,14 +274,14 @@ export default function TopicDetailPage() {
             {/* CTAs */}
             <div className="flex gap-3 w-full md:w-auto">
               <Link
-                href={`/courses/${courseId}/modules/vocabulary-by-topics/topics/${topic.id}/learn`}
+                href={`/courses/${courseId}/modules/vocabulary-by-topics/topics/${topic.slug || topic.id}/learn`}
                 className="flex-1 md:flex-none px-6 py-3 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white text-xs font-bold flex items-center justify-center gap-2 hover:shadow-md transition-all transform hover:-translate-y-0.5"
               >
                 <span className="material-symbols-outlined text-base">style</span>
                 Học Flashcard
               </Link>
               <Link
-                href={`/courses/${courseId}/modules/vocabulary-by-topics/topics/${topic.id}/quiz`}
+                href={`/courses/${courseId}/modules/vocabulary-by-topics/topics/${topic.slug || topic.id}/quiz`}
                 className="flex-1 md:flex-none px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold flex items-center justify-center gap-2 hover:shadow-md transition-all transform hover:-translate-y-0.5"
               >
                 <Award className="h-4 w-4" />
@@ -301,6 +345,7 @@ export default function TopicDetailPage() {
               <option value="verb">Động từ (v)</option>
               <option value="adjective">Tính từ (adj)</option>
               <option value="adverb">Trạng từ (adv)</option>
+              <option value="phrasal verb">Cụm động từ (phrasal verb)</option>
               <option value="phrase">Cụm từ (phrase)</option>
             </select>
 
@@ -415,8 +460,8 @@ export default function TopicDetailPage() {
                         <div className="space-y-1.5">
                           <h4 className="font-bold text-text-primary uppercase tracking-wider text-[10px]">Ví dụ trong ngữ cảnh VSTEP</h4>
                           <div className="pl-3 border-l-2 border-secondary/30 space-y-1">
-                            <p className="font-semibold text-text-primary italic">&ldquo;{word.exampleEn}&rdquo;</p>
-                            <p className="text-text-secondary">&rarr; {word.exampleVi}</p>
+                            <p className="font-semibold text-text-primary italic">&ldquo;{highlightWord(word.exampleEn, word.word)}&rdquo;</p>
+                            {word.exampleVi && <p className="text-text-secondary">&rarr; {word.exampleVi}</p>}
                           </div>
                         </div>
                       </div>
@@ -471,6 +516,63 @@ export default function TopicDetailPage() {
                                 <p key={idx} className="font-medium">{err}</p>
                               ))}
                             </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Personal Notes Section */}
+                      <div className="pt-4 border-t border-dashed border-slate-200/80 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <h4 className="font-bold text-text-primary uppercase tracking-wider text-[10px] flex items-center gap-1">
+                            <span className="material-symbols-outlined text-xs">edit_note</span>
+                            Ghi chú cá nhân (Personal Notes)
+                          </h4>
+                          {editingNoteWordId !== word.id && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingNoteWordId(word.id);
+                                setNoteText(word.note || "");
+                              }}
+                              className="text-[10px] font-bold text-primary hover:text-primary-dark transition-colors flex items-center gap-0.5 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-xs">edit</span>
+                              {word.note ? "Sửa ghi chú" : "Thêm ghi chú"}
+                            </button>
+                          )}
+                        </div>
+
+                        {editingNoteWordId === word.id ? (
+                          <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <textarea
+                              value={noteText}
+                              onChange={(e) => setNoteText(e.target.value)}
+                              placeholder="Nhập ghi chú cá nhân của bạn về từ này (ví dụ: mẹo ghi nhớ, ngữ cảnh đặc biệt...)"
+                              className="w-full p-2.5 rounded-xl border border-secondary-container/40 bg-white focus:ring-1 focus:ring-primary focus:border-transparent outline-none text-xs text-text-primary"
+                              rows={2}
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => setEditingNoteWordId(null)}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[10px] font-bold text-text-secondary cursor-pointer"
+                              >
+                                Hủy
+                              </button>
+                              <button
+                                onClick={() => handleSaveNote(word.id)}
+                                className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-[10px] font-bold cursor-pointer"
+                              >
+                                Lưu ghi chú
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="pl-3 border-l-2 border-slate-200">
+                            {word.note ? (
+                              <p className="text-text-primary font-medium whitespace-pre-wrap">{word.note}</p>
+                            ) : (
+                              <p className="text-text-secondary italic">Chưa có ghi chú nào cho từ này. Nhấn "Thêm ghi chú" để ghi lại mẹo học của riêng bạn.</p>
+                            )}
                           </div>
                         )}
                       </div>

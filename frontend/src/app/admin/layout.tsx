@@ -62,11 +62,10 @@ export default function AdminLayout({
 
             return (
               <Link
-                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition ${
-                  isActive
-                    ? "bg-primary text-white"
-                    : "text-text-secondary hover:bg-surface hover:text-text-primary"
-                }`}
+                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition ${isActive
+                  ? "bg-primary text-white"
+                  : "text-text-secondary hover:bg-surface hover:text-text-primary"
+                  }`}
                 href={item.href}
                 key={item.href}
               >

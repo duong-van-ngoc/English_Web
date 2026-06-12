@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ContentStatus } from '@prisma/client';
 
 export class CreateVocabularyTopicDto {
   @IsString()
@@ -25,4 +26,12 @@ export class CreateVocabularyTopicDto {
   @IsOptional()
   @IsString()
   level?: string;
+
+  @IsOptional()
+  @IsEnum(ContentStatus)
+  status?: ContentStatus;
+
+  @IsOptional()
+  @IsString()
+  moduleId?: string;
 }

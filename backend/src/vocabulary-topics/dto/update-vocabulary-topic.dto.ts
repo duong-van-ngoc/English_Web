@@ -31,4 +31,8 @@ export class UpdateVocabularyTopicDto {
   @IsOptional()
   @IsEnum(ContentStatus)
   status?: ContentStatus;
+
+  @IsOptional()
+  @IsString()
+  moduleId?: string | null;
 }

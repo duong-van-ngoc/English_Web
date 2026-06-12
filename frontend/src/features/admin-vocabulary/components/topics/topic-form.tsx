@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { topicFormSchema, type TopicFormValues } from "../../schemas/topic.schema";
+import { api } from "@/lib/api";
+import type { CourseModule } from "@/types";
 
 interface TopicFormProps {
   initialValues?: Partial<TopicFormValues>;
@@ -13,9 +15,12 @@ interface TopicFormProps {
 }
 
 export function TopicForm({ initialValues, onSubmit, isLoading = false }: TopicFormProps) {
+  const [modules, setModules] = useState<CourseModule[]>([]);
+
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<TopicFormValues>({
     resolver: zodResolver(topicFormSchema),
@@ -24,8 +29,28 @@ export function TopicForm({ initialValues, onSubmit, isLoading = false }: TopicF
       description: initialValues?.description || "",
       imageUrl: initialValues?.imageUrl || "",
       status: initialValues?.status || "DRAFT",
+      moduleId: initialValues?.moduleId || "",
     },
   });
+
+  useEffect(() => {
+    async function loadModules() {
+      try {
+        const data = await api.getAdminCourseModules("on-thi-vstep-b1");
+        // Filter modules to only show VOCABULARY type modules
+        const vocabModules = data.filter((m) => m.type === "VOCABULARY");
+        setModules(vocabModules);
+        
+        // Pre-select the first vocabulary module if creating new
+        if (!initialValues?.moduleId && vocabModules.length > 0) {
+          setValue("moduleId", vocabModules[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to load VSTEP modules for vocabulary topic form", err);
+      }
+    }
+    void loadModules();
+  }, [setValue, initialValues?.moduleId]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -57,6 +82,19 @@ export function TopicForm({ initialValues, onSubmit, isLoading = false }: TopicF
         error={errors.imageUrl?.message}
         {...register("imageUrl")}
       />
+
+      <Select
+        label="Module trực thuộc (Không bắt buộc)"
+        error={errors.moduleId?.message}
+        {...register("moduleId")}
+      >
+        <option value="">Không thuộc Module nào (Mặc định)</option>
+        {modules.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.title}
+          </option>
+        ))}
+      </Select>
 
       <Select
         label="Trạng thái xuất bản"

@@ -32,6 +32,22 @@ export function useTopicDetail(topicId: string) {
     },
   });
 
+  const publishTopicMutation = useMutation({
+    mutationFn: () => vocabularyTopicService.publishTopic(topicId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vocabulary-topic", topicId] });
+      queryClient.invalidateQueries({ queryKey: ["vocabulary-topics"] });
+    },
+  });
+
+  const unpublishTopicMutation = useMutation({
+    mutationFn: () => vocabularyTopicService.unpublishTopic(topicId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vocabulary-topic", topicId] });
+      queryClient.invalidateQueries({ queryKey: ["vocabulary-topics"] });
+    },
+  });
+
   return {
     topic,
     isLoading,
@@ -41,5 +57,9 @@ export function useTopicDetail(topicId: string) {
     isUpdating: updateTopicMutation.isPending,
     deleteTopic: deleteTopicMutation.mutateAsync,
     isDeleting: deleteTopicMutation.isPending,
+    publishTopic: publishTopicMutation.mutateAsync,
+    isPublishing: publishTopicMutation.isPending,
+    unpublishTopic: unpublishTopicMutation.mutateAsync,
+    isUnpublishing: unpublishTopicMutation.isPending,
   };
 }

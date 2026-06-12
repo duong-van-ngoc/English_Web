@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateLessonDto {
   @IsString()
@@ -14,4 +14,8 @@ export class CreateLessonDto {
   @IsInt()
   @Min(1)
   order!: number;
+
+  @IsOptional()
+  @IsString()
+  moduleId?: string;
 }

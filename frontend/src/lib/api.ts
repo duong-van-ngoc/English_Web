@@ -8,6 +8,9 @@ import type {
   ContentStatus,
   Course,
   CoursePayload,
+  CourseModule,
+  CreateCourseModulePayload,
+  UpdateCourseModulePayload,
   DashboardSummary,
   FileAsset,
   FileAssetListResult,
@@ -33,14 +36,15 @@ import type {
   VocabularyPayload,
   VocabularyReviewResult,
 } from "@/types";
+import type { VocabularyDashboardData } from "@/features/admin-vocabulary/types/vocabulary-dashboard.type";
 
-const apiOrigin = process.env.NEXT_PUBLIC_API_URL;
+const apiOrigin = process.env.NEXT_PUBLIC_API_URL || "";
 
 if (!apiOrigin) {
-  throw new Error("Missing NEXT_PUBLIC_API_URL");
+  console.warn("⚠️ Cảnh báo: Thiếu biến môi trường NEXT_PUBLIC_API_URL. Các API requests sẽ mặc định gọi về localhost.");
 }
 
-const apiBaseUrl = `${apiOrigin.replace(/\/$/, "")}/api`;
+const apiBaseUrl = `${(apiOrigin || "http://localhost:3000").replace(/\/$/, "")}/api`;
 
 type ErrorPayload = {
   message?: string | string[];
@@ -136,6 +140,17 @@ export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError;
 }
 
+function normalizeCourseId(courseId: string): string {
+  if (
+    courseId === "course-mock-7" ||
+    courseId === "course-mock-8" ||
+    courseId === "vstep-speaking-writing"
+  ) {
+    return "on-thi-vstep-b1";
+  }
+  return courseId;
+}
+
 export const api = {
   getCourses: () => request<Course[]>("/courses"),
   getCourseById: (courseId: string) => request<Course>(`/courses/${courseId}`),
@@ -179,6 +194,7 @@ export const api = {
     search?: string;
     status?: ContentStatus | "";
     courseId?: string;
+    moduleId?: string;
   }) => request<Lesson[]>(withQuery("/admin/lessons", params)),
   getAdminLesson: (lessonId: string) =>
     request<Lesson>(`/admin/lessons/${lessonId}`),
@@ -231,6 +247,8 @@ export const api = {
     request<Vocabulary[]>(withQuery("/admin/vocabulary", params)),
   getAdminVocabularyItem: (vocabularyId: string) =>
     request<Vocabulary>(`/admin/vocabulary/${vocabularyId}`),
+  getAdminVocabularyDashboard: () =>
+    request<VocabularyDashboardData>("/admin/vocabulary/dashboard"),
   getAdminFileAssets: (params?: {
     kind?: FileKind | "";
     page?: number;
@@ -353,9 +371,9 @@ export const api = {
 
   // User Vocabulary Topics API
   getVocabularyTopics: (courseId: string) =>
-    request<any[]>(`/courses/${courseId}/vocabulary-topics`),
+    request<any[]>(`/courses/${normalizeCourseId(courseId)}/vocabulary-topics`),
   getTopicWords: (courseId: string, topicSlug: string) =>
-    request<any>(`/courses/${courseId}/vocabulary-topics/${topicSlug}/words`),
+    request<any>(`/courses/${normalizeCourseId(courseId)}/vocabulary-topics/${topicSlug}/words`),
   updateWordReviewStatus: (
     wordId: string,
     payload: { status: "DUE" | "LEARNING" | "MASTERED"; easeLevel?: number; note?: string },
@@ -372,10 +390,24 @@ export const api = {
     request<any>(`/vocabulary/${wordId}/favorite`, {
       method: "DELETE",
     }),
+  createQuizAttempt: (courseId: string, payload: any) =>
+    request<any>(`/courses/${normalizeCourseId(courseId)}/vocabulary-topics/quiz/attempt`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getQuizAttempt: (courseId: string, attemptId: string) =>
+    request<any>(`/courses/${normalizeCourseId(courseId)}/vocabulary-topics/quiz/attempts/${attemptId}`),
+  getQuizAttempts: (courseId: string) =>
+    request<any[]>(`/courses/${normalizeCourseId(courseId)}/vocabulary-topics/quiz/attempts`),
+  updateWordNote: (wordId: string, note: string) =>
+    request<any>(`/vocabulary/${wordId}/note`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    }),
 
   // Admin Vocabulary Topics API
-  getAdminVocabularyTopics: (courseId: string) =>
-    request<any[]>(`/admin/courses/${courseId}/vocabulary-topics`),
+  getAdminVocabularyTopics: (courseId: string, moduleId?: string) =>
+    request<any[]>(withQuery(`/admin/courses/${courseId}/vocabulary-topics`, { moduleId })),
   getAdminVocabularyTopic: (topicId: string) =>
     request<any>(`/admin/vocabulary-topics/${topicId}`),
   createVocabularyTopic: (courseId: string, payload: any) =>
@@ -437,5 +469,34 @@ export const api = {
     request<any>("/admin/vocabulary/reorder", {
       method: "PATCH",
       body: JSON.stringify({ wordIds }),
+    }),
+  publishAllTopicWords: (topicId: string) =>
+    request<any>(`/admin/vocabulary-topics/${topicId}/words/publish-all`, {
+      method: "PATCH",
+    }),
+
+  // Course Modules API
+  getCourseModules: (courseId: string) =>
+    request<CourseModule[]>(`/courses/${courseId}/modules`),
+  getAdminCourseModules: (courseId: string) =>
+    request<CourseModule[]>(`/admin/courses/${courseId}/modules`),
+  createModule: (courseId: string, payload: CreateCourseModulePayload) =>
+    request<CourseModule>(`/admin/courses/${courseId}/modules`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateModule: (courseId: string, moduleId: string, payload: UpdateCourseModulePayload) =>
+    request<CourseModule>(`/admin/courses/${courseId}/modules/${moduleId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteModule: (courseId: string, moduleId: string) =>
+    request<CourseModule>(`/admin/courses/${courseId}/modules/${moduleId}`, {
+      method: "DELETE",
+    }),
+  reorderModules: (courseId: string, moduleIds: string[]) =>
+    request<any>(`/admin/courses/${courseId}/modules/reorder`, {
+      method: "PATCH",
+      body: JSON.stringify({ moduleIds }),
     }),
 };

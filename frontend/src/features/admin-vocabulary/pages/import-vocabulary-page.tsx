@@ -20,7 +20,15 @@ interface ImportVocabularyPageProps {
 export function ImportVocabularyPage({ params }: ImportVocabularyPageProps) {
   const { topicId } = use(params);
   const { topic } = useTopicDetail(topicId);
-  const { validateFile, isValidating, validationData, commitImport, isCommitting } = useImportVocabulary(topicId);
+  const {
+    validateFile,
+    isValidating,
+    validationData,
+    inMemoryRows,
+    commitImport,
+    isCommitting,
+    imageProgress,
+  } = useImportVocabulary(topicId);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -63,17 +71,18 @@ export function ImportVocabularyPage({ params }: ImportVocabularyPageProps) {
           <span>Nhập dữ liệu</span>
         </div>
         <h2 className="text-3xl font-extrabold text-text-primary tracking-tight">
-          Nhập từ vựng bằng Excel/CSV
+          Nhập từ vựng bằng Excel/CSV/ZIP
         </h2>
         <p className="text-sm text-text-secondary mt-1">
-          Nhập hàng loạt từ vựng cùng lúc vào chủ đề **{topic?.name}**.
+          Nhập hàng loạt từ vựng vào chủ đề <strong>{topic?.name}</strong>.
+          Hỗ trợ file CSV, Excel hoặc ZIP kèm ảnh minh họa.
         </p>
       </div>
 
       {/* Stepper progress indicator */}
       <ImportStepper currentStep={step} />
 
-      {/* Step Contents */}
+      {/* Step 1 — Upload */}
       {step === 1 && (
         <Card className="max-w-3xl mx-auto">
           <CardContent className="pt-6">
@@ -82,25 +91,68 @@ export function ImportVocabularyPage({ params }: ImportVocabularyPageProps) {
         </Card>
       )}
 
+      {/* Step 2 — Preview & Confirm */}
       {step === 2 && validationData && (
         <div className="space-y-6">
-          {/* Validation indicators */}
+          {/* Stats */}
           <ImportValidationSummary
             total={validationData.totalRows}
             valid={validationData.validRows}
             invalid={validationData.invalidRows}
           />
 
+          {/* Image count badge if ZIP was uploaded */}
+          {validationData.rowsWithImages > 0 && (
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 w-fit">
+              <span className="material-symbols-outlined text-[18px] text-blue-600">photo_library</span>
+              <span className="text-sm font-semibold text-blue-800">
+                {validationData.rowsWithImages} ảnh sẽ được tải lên
+              </span>
+              <span className="text-xs text-blue-600">
+                ({validationData.validRows - validationData.rowsWithImages} từ không có ảnh)
+              </span>
+            </div>
+          )}
+
           {/* Table Preview */}
           <Card>
             <CardHeader>
               <CardTitle>Xem trước dữ liệu tải lên</CardTitle>
-              <CardDescription>Các dòng được tô đỏ biểu thị thông tin không hợp lệ.</CardDescription>
+              <CardDescription>
+                Các dòng tô đỏ biểu thị thông tin không hợp lệ.
+                {validationData.rowsWithImages > 0 && " Cột Ảnh hiển thị ảnh minh họa được nhận dạng từ ZIP."}
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-0 border-t border-border/40">
-              <ImportPreviewTable rows={validationData.rows} />
+              <ImportPreviewTable rows={inMemoryRows} />
             </CardContent>
           </Card>
+
+          {/* Progress bar when committing with images */}
+          {isCommitting && imageProgress.total > 0 && (
+            <div className="rounded-xl bg-blue-50 border border-blue-200 p-4 space-y-2">
+              <div className="flex items-center justify-between text-sm font-semibold text-blue-800">
+                <span className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] animate-spin">sync</span>
+                  Đang tải ảnh lên...
+                </span>
+                <span>
+                  {imageProgress.uploaded} / {imageProgress.total} ảnh
+                </span>
+              </div>
+              <div className="h-2 bg-blue-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${Math.round((imageProgress.uploaded / imageProgress.total) * 100)}%`,
+                  }}
+                />
+              </div>
+              <p className="text-[11px] text-blue-600">
+                Vui lòng không đóng tab trong quá trình tải lên ảnh.
+              </p>
+            </div>
+          )}
 
           {/* Action Confirm */}
           <ImportConfirmPanel
@@ -112,6 +164,7 @@ export function ImportVocabularyPage({ params }: ImportVocabularyPageProps) {
         </div>
       )}
 
+      {/* Step 3 — Success */}
       {step === 3 && (
         <Card className="max-w-xl mx-auto">
           <CardContent className="pt-6">

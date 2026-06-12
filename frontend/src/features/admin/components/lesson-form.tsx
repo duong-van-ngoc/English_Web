@@ -15,7 +15,7 @@ import {
   StatusBadge,
 } from "./admin-ui";
 import { api, isApiError } from "@/lib/api";
-import type { Course, Lesson, LessonPayload } from "@/types";
+import type { Course, Lesson, LessonPayload, CourseModule } from "@/types";
 
 type LessonFormState = LessonPayload & {
   courseId: string;
@@ -26,11 +26,13 @@ const emptyForm: LessonFormState = {
   title: "",
   content: "",
   order: 1,
+  moduleId: null,
 };
 
 export function LessonForm({ lessonId }: { lessonId?: string }) {
   const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [courseModules, setCourseModules] = useState<CourseModule[]>([]);
   const [error, setError] = useState("");
   const [fieldError, setFieldError] = useState("");
   const [form, setForm] = useState<LessonFormState>(emptyForm);
@@ -64,6 +66,7 @@ export function LessonForm({ lessonId }: { lessonId?: string }) {
             title: lessonData.title,
             content: lessonData.content,
             order: lessonData.order,
+            moduleId: lessonData.moduleId || null,
           });
         } else {
           setForm((current) => ({
@@ -91,7 +94,20 @@ export function LessonForm({ lessonId }: { lessonId?: string }) {
     };
   }, [lessonId]);
 
-  function updateField(field: keyof LessonFormState, value: string | number) {
+  useEffect(() => {
+    if (!form.courseId) return;
+    async function loadModules() {
+      try {
+        const modulesData = await api.getAdminCourseModules(form.courseId);
+        setCourseModules(modulesData);
+      } catch (err) {
+        console.error("Failed to load course modules", err);
+      }
+    }
+    void loadModules();
+  }, [form.courseId]);
+
+  function updateField(field: keyof LessonFormState, value: any) {
     setForm((current) => ({
       ...current,
       [field]: value,
@@ -123,6 +139,7 @@ export function LessonForm({ lessonId }: { lessonId?: string }) {
       title: form.title.trim(),
       content: form.content.trim(),
       order: form.order,
+      moduleId: form.moduleId || null,
     };
   }
 
@@ -226,6 +243,18 @@ export function LessonForm({ lessonId }: { lessonId?: string }) {
               {courses.map((course) => (
                 <option key={course.id} value={course.id}>
                   {course.title}
+                </option>
+              ))}
+            </AdminSelect>
+            <AdminSelect
+              label="Module trực thuộc (Không bắt buộc)"
+              onChange={(event) => updateField("moduleId", event.target.value || null)}
+              value={form.moduleId || ""}
+            >
+              <option value="">Không thuộc Module nào</option>
+              {courseModules.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.title} ({m.type})
                 </option>
               ))}
             </AdminSelect>

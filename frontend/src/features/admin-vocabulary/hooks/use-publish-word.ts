@@ -4,7 +4,7 @@ import { vocabularyWordService } from "../services/vocabulary-word.service";
 export function usePublishWord(topicId: string) {
   const queryClient = useQueryClient();
 
-  const mutation = useMutation({
+  const publishWordMutation = useMutation({
     mutationFn: (wordId: string) => vocabularyWordService.publishWord(wordId),
     onSuccess: (_, wordId) => {
       queryClient.invalidateQueries({ queryKey: ["vocabulary-word", wordId] });
@@ -13,9 +13,19 @@ export function usePublishWord(topicId: string) {
     },
   });
 
+  const publishAllMutation = useMutation({
+    mutationFn: () => vocabularyWordService.publishAllWords(topicId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vocabulary-words", topicId] });
+      queryClient.invalidateQueries({ queryKey: ["vocabulary-dashboard"] });
+    },
+  });
+
   return {
-    publishWord: mutation.mutateAsync,
-    isPublishing: mutation.isPending,
-    error: mutation.error,
+    publishWord: publishWordMutation.mutateAsync,
+    isPublishing: publishWordMutation.isPending,
+    publishAllWords: publishAllMutation.mutateAsync,
+    isPublishingAll: publishAllMutation.isPending,
+    error: publishWordMutation.error || publishAllMutation.error,
   };
 }

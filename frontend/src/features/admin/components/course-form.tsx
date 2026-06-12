@@ -160,12 +160,22 @@ export function CourseForm({ courseId }: { courseId?: string }) {
     <div>
       <AdminPageTitle
         action={
-          <Link
-            className="inline-flex min-h-10 items-center justify-center rounded-md border border-border bg-surface-strong px-3 py-2 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:text-primary"
-            href="/admin/courses"
-          >
-            Back
-          </Link>
+          <div className="flex gap-2">
+            {courseId ? (
+              <Link
+                className="inline-flex min-h-10 items-center justify-center rounded-md border border-primary bg-primary text-white px-3.5 py-2 text-sm font-semibold transition hover:bg-hover"
+                href={`/admin/courses/${courseId}/modules`}
+              >
+                Quản lý Modules
+              </Link>
+            ) : null}
+            <Link
+              className="inline-flex min-h-10 items-center justify-center rounded-md border border-border bg-surface-strong px-3 py-2 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:text-primary"
+              href="/admin/courses"
+            >
+              Back
+            </Link>
+          </div>
         }
         description="Luu draft, publish va preview course truoc khi hoc vien thay."
         title={courseId ? "Edit course" : "New course"}

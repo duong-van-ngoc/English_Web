@@ -16,6 +16,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { ReviewModule } from './review/review.module';
 import { FilesModule } from './files/files.module';
 import { VocabularyTopicsModule } from './vocabulary-topics/vocabulary-topics.module';
+import { ModulesModule } from './modules/modules.module';
 
 /**
  * AppModule
@@ -41,6 +42,7 @@ import { VocabularyTopicsModule } from './vocabulary-topics/vocabulary-topics.mo
     ReviewModule,
     FilesModule,
     VocabularyTopicsModule,
+    ModulesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

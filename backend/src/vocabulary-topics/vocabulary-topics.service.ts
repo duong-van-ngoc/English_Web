@@ -1,24 +1,32 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { ContentStatus, ReviewStatus } from '@prisma/client';
+import { ContentStatus, ReviewStatus, ModuleType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVocabularyTopicDto } from './dto/create-vocabulary-topic.dto';
 import { UpdateVocabularyTopicDto } from './dto/update-vocabulary-topic.dto';
 import { CreateTopicWordDto } from './dto/create-topic-word.dto';
 import { UpdateTopicWordDto } from './dto/update-topic-word.dto';
+import { CreateQuizAttemptDto } from './dto/create-quiz-attempt.dto';
 
 @Injectable()
 export class VocabularyTopicsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   // ==========================================
   // ADMIN TOPIC METHODS
   // ==========================================
 
-  async findAllAdmin(courseId?: string) {
+  async findAllAdmin(courseIdOrSlug?: string, moduleId?: string) {
+    let resolvedCourseId: string | undefined;
+
+    if (courseIdOrSlug) {
+      resolvedCourseId = await this.resolveCourseId(courseIdOrSlug);
+    }
+
     return this.prisma.vocabularyTopic.findMany({
       where: {
         deletedAt: null,
-        ...(courseId ? { courseId } : {}),
+        ...(resolvedCourseId ? { courseId: resolvedCourseId } : {}),
+        ...(moduleId ? { moduleId } : {}),
       },
       include: {
         _count: {
@@ -35,20 +43,28 @@ export class VocabularyTopicsService {
     return this.ensureTopicExists(topicId);
   }
 
-  async create(courseId: string, dto: CreateVocabularyTopicDto) {
+  async create(courseIdOrSlug: string, dto: CreateVocabularyTopicDto) {
+    const courseId = await this.resolveCourseId(courseIdOrSlug);
     const slug = dto.slug ? this.slugify(dto.slug) : this.slugify(dto.name);
-    
-    // Check if slug is unique within this course
+
+    // Check if slug is unique within this course (including soft-deleted ones)
     const existing = await this.prisma.vocabularyTopic.findFirst({
       where: {
         courseId,
         slug,
-        deletedAt: null,
       },
     });
 
     if (existing) {
-      throw new ConflictException(`Topic slug "${slug}" already exists in this course.`);
+      if (existing.deletedAt !== null) {
+        // Giải phóng slug bị trùng lặp của bản ghi cũ đã bị xóa mềm
+        await this.prisma.vocabularyTopic.update({
+          where: { id: existing.id },
+          data: { slug: `${existing.slug}-deleted-${Date.now()}` },
+        });
+      } else {
+        throw new ConflictException(`Topic slug "${slug}" already exists in this course.`);
+      }
     }
 
     // Get max order
@@ -61,6 +77,7 @@ export class VocabularyTopicsService {
     return this.prisma.vocabularyTopic.create({
       data: {
         courseId,
+        moduleId: dto.moduleId || null,
         name: dto.name,
         slug,
         description: dto.description,
@@ -68,7 +85,7 @@ export class VocabularyTopicsService {
         icon: dto.icon,
         level: dto.level,
         order,
-        status: ContentStatus.DRAFT,
+        status: dto.status || ContentStatus.DRAFT,
       },
     });
   }
@@ -79,7 +96,7 @@ export class VocabularyTopicsService {
     let slug = topic.slug;
     if (dto.slug !== undefined || dto.name !== undefined) {
       const prospectiveSlug = dto.slug ? this.slugify(dto.slug) : this.slugify(dto.name || topic.name);
-      
+
       if (prospectiveSlug !== topic.slug) {
         // Check uniqueness
         const existing = await this.prisma.vocabularyTopic.findFirst({
@@ -87,11 +104,18 @@ export class VocabularyTopicsService {
             courseId: topic.courseId,
             slug: prospectiveSlug,
             id: { not: topicId },
-            deletedAt: null,
           },
         });
         if (existing) {
-          throw new ConflictException(`Topic slug "${prospectiveSlug}" already exists in this course.`);
+          if (existing.deletedAt !== null) {
+            // Giải phóng slug của bản ghi cũ đã bị xóa mềm
+            await this.prisma.vocabularyTopic.update({
+              where: { id: existing.id },
+              data: { slug: `${existing.slug}-deleted-${Date.now()}` },
+            });
+          } else {
+            throw new ConflictException(`Topic slug "${prospectiveSlug}" already exists in this course.`);
+          }
         }
         slug = prospectiveSlug;
       }
@@ -107,6 +131,7 @@ export class VocabularyTopicsService {
         icon: dto.icon,
         level: dto.level,
         status: dto.status,
+        moduleId: dto.moduleId !== undefined ? dto.moduleId : undefined,
       },
     });
   }
@@ -228,7 +253,7 @@ export class VocabularyTopicsService {
         level: dto.level,
         difficulty: dto.difficulty,
         order,
-        status: ContentStatus.DRAFT,
+        status: dto.status || ContentStatus.DRAFT,
         tags: dto.tags || [],
         synonyms: dto.synonyms || [],
         collocations: dto.collocations || [],
@@ -304,6 +329,24 @@ export class VocabularyTopicsService {
     });
   }
 
+  async publishAllWords(topicId: string) {
+    await this.ensureTopicExists(topicId);
+
+    // Cập nhật tất cả các từ của topicId có trạng thái DRAFT thành PUBLISHED
+    const result = await this.prisma.vocabulary.updateMany({
+      where: {
+        topicId,
+        status: ContentStatus.DRAFT,
+        deletedAt: null,
+      },
+      data: {
+        status: ContentStatus.PUBLISHED,
+      },
+    });
+
+    return { count: result.count };
+  }
+
   async reorderWords(wordIds: string[]) {
     await this.prisma.$transaction(
       wordIds.map((id, index) =>
@@ -332,11 +375,26 @@ export class VocabularyTopicsService {
       throw new NotFoundException('Course not found');
     }
 
+    const vocabModule = await this.prisma.module.findFirst({
+      where: {
+        courseId: course.id,
+        type: ModuleType.VOCABULARY,
+      },
+    });
+
     const topics = await this.prisma.vocabularyTopic.findMany({
       where: {
         courseId: course.id,
         status: ContentStatus.PUBLISHED,
         deletedAt: null,
+        ...(vocabModule
+          ? {
+              OR: [
+                { moduleId: vocabModule.id },
+                { moduleId: null },
+              ],
+            }
+          : {}),
       },
       orderBy: {
         order: 'asc',
@@ -540,8 +598,119 @@ export class VocabularyTopicsService {
   }
 
   // ==========================================
+  // USER QUIZ & NOTE METHODS
+  // ==========================================
+
+  async createQuizAttempt(userId: string, dto: CreateQuizAttemptDto) {
+    return this.prisma.vocabularyQuizAttempt.create({
+      data: {
+        userId,
+        topicId: dto.topicId,
+        topicName: dto.topicName,
+        score: dto.score,
+        correctCount: dto.correctCount,
+        wrongCount: dto.wrongCount,
+        isPassed: dto.isPassed,
+        wrongAnswers: dto.wrongAnswers,
+      },
+    });
+  }
+
+  async getQuizAttempt(userId: string, attemptId: string) {
+    const attempt = await this.prisma.vocabularyQuizAttempt.findFirst({
+      where: {
+        id: attemptId,
+        userId,
+      },
+    });
+
+    if (!attempt) {
+      throw new NotFoundException(`Quiz attempt not found.`);
+    }
+
+    return attempt;
+  }
+
+  async getQuizAttempts(userId: string, courseIdOrSlug: string) {
+    const courseId = await this.resolveCourseId(courseIdOrSlug);
+    const topics = await this.prisma.vocabularyTopic.findMany({
+      where: {
+        courseId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        slug: true,
+      },
+    });
+
+    const topicSlugs = topics.map((t) => t.slug);
+    const topicIds = topics.map((t) => t.id);
+
+    return this.prisma.vocabularyQuizAttempt.findMany({
+      where: {
+        userId,
+        OR: [
+          { topicId: { in: topicSlugs } },
+          { topicId: { in: topicIds } },
+        ],
+      },
+      orderBy: {
+        timestamp: 'desc',
+      },
+    });
+  }
+
+  async updateWordNote(userId: string, wordId: string, note: string) {
+    const word = await this.prisma.vocabulary.findFirst({
+      where: { id: wordId, deletedAt: null },
+    });
+
+    if (!word) {
+      throw new NotFoundException('Word not found');
+    }
+
+    return this.prisma.vocabularyReview.upsert({
+      where: {
+        userId_vocabularyId: {
+          userId,
+          vocabularyId: wordId,
+        },
+      },
+      update: {
+        note,
+      },
+      create: {
+        userId,
+        vocabularyId: wordId,
+        status: ReviewStatus.LEARNING,
+        note,
+      },
+    });
+  }
+
+  // ==========================================
   // HELPERS
   // ==========================================
+
+  /**
+   * Resolve a course by either its CUID id or slug.
+   * Throws NotFoundException if course is not found.
+   */
+  private async resolveCourseId(courseIdOrSlug: string): Promise<string> {
+    const course = await this.prisma.course.findFirst({
+      where: {
+        OR: [{ id: courseIdOrSlug }, { slug: courseIdOrSlug }],
+      },
+      select: { id: true },
+    });
+
+    if (!course) {
+      throw new NotFoundException(`Course "${courseIdOrSlug}" not found.`);
+    }
+
+    return course.id;
+  }
 
   private async ensureTopicExists(id: string) {
     const topic = await this.prisma.vocabularyTopic.findFirst({

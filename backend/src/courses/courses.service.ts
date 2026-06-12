@@ -149,11 +149,14 @@ export class CoursesService {
       throw new NotFoundException('Course not found');
     }
 
+    // Comment out to allow publishing courses without any published lessons
+    /*
     if (status === ContentStatus.PUBLISHED && course.lessons.length === 0) {
       throw new BadRequestException(
         'Course must have at least one published lesson before publishing',
       );
     }
+    */
 
     return this.prisma.course.update({
       where: {

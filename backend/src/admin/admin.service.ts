@@ -115,6 +115,166 @@ export class AdminService {
     };
   }
 
+  async getVocabularyDashboard() {
+    // 1. Stats
+    const [totalTopics, totalWords, draftWords, needsAttentionCount] =
+      await Promise.all([
+        this.prisma.vocabularyTopic.count({ where: { deletedAt: null } }),
+        this.prisma.vocabulary.count({ where: { deletedAt: null } }),
+        this.prisma.vocabulary.count({
+          where: { status: ContentStatus.DRAFT, deletedAt: null },
+        }),
+        this.prisma.vocabulary.count({
+          where: {
+            OR: [
+              { meaning: '' },
+              { partOfSpeech: null },
+              { partOfSpeech: '' },
+              { imageUrl: null },
+              { imageUrl: '' },
+              { audioUrl: null },
+              { audioUrl: '' },
+            ],
+            deletedAt: null,
+          },
+        }),
+      ]);
+
+    // 2. Growth (Cumulative count by week for the last 4 weeks)
+    const now = new Date();
+    const msInDay = 24 * 60 * 60 * 1000;
+    const dateW1 = new Date(now.getTime() - 28 * msInDay);
+    const dateW2 = new Date(now.getTime() - 21 * msInDay);
+    const dateW3 = new Date(now.getTime() - 14 * msInDay);
+    const dateW4 = new Date(now.getTime() - 7 * msInDay);
+
+    const [countW1, countW2, countW3, countW4] = await Promise.all([
+      this.prisma.vocabulary.count({
+        where: { createdAt: { lte: dateW1 }, deletedAt: null },
+      }),
+      this.prisma.vocabulary.count({
+        where: { createdAt: { lte: dateW2 }, deletedAt: null },
+      }),
+      this.prisma.vocabulary.count({
+        where: { createdAt: { lte: dateW3 }, deletedAt: null },
+      }),
+      this.prisma.vocabulary.count({
+        where: { createdAt: { lte: dateW4 }, deletedAt: null },
+      }),
+    ]);
+
+    const growth = [
+      { date: 'Tuần 1', count: countW1 },
+      { date: 'Tuần 2', count: countW2 },
+      { date: 'Tuần 3', count: countW3 },
+      { date: 'Tuần 4', count: countW4 },
+      { date: 'Hiện tại', count: totalWords },
+    ];
+
+    // 3. Health Alerts (Content missing issues)
+    const topics = await this.prisma.vocabularyTopic.findMany({
+      where: { deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        vocabularies: {
+          where: { deletedAt: null },
+          select: {
+            imageUrl: true,
+            audioUrl: true,
+            meaning: true,
+          },
+        },
+      },
+    });
+
+    const healthAlerts: any[] = [];
+    topics.forEach((topic) => {
+      let missingImage = 0;
+      let missingAudio = 0;
+      let missingTranslation = 0;
+
+      topic.vocabularies.forEach((v) => {
+        if (!v.imageUrl || v.imageUrl.trim() === '') missingImage++;
+        if (!v.audioUrl || v.audioUrl.trim() === '') missingAudio++;
+        if (!v.meaning || v.meaning.trim() === '') missingTranslation++;
+      });
+
+      if (missingImage > 0) {
+        healthAlerts.push({
+          topicId: topic.id,
+          topicName: topic.name,
+          type: 'image',
+          missingCount: missingImage,
+        });
+      }
+      if (missingAudio > 0) {
+        healthAlerts.push({
+          topicId: topic.id,
+          topicName: topic.name,
+          type: 'audio',
+          missingCount: missingAudio,
+        });
+      }
+      if (missingTranslation > 0) {
+        healthAlerts.push({
+          topicId: topic.id,
+          topicName: topic.name,
+          type: 'translation',
+          missingCount: missingTranslation,
+        });
+      }
+    });
+
+    healthAlerts.sort((a, b) => b.missingCount - a.missingCount);
+    const topHealthAlerts = healthAlerts.slice(0, 10);
+
+    // 4. Recent Topics (5 most recently updated topics)
+    const recentTopicsRaw = await this.prisma.vocabularyTopic.findMany({
+      where: { deletedAt: null },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+      include: {
+        vocabularies: {
+          where: { deletedAt: null },
+          select: { id: true },
+        },
+      },
+    });
+
+    const formatRelativeTime = (date: Date): string => {
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / (60 * 1000));
+      const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
+      const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+
+      if (diffMins < 1) return 'Vừa xong';
+      if (diffMins < 60) return `${diffMins} phút trước`;
+      if (diffHours < 24) return `${diffHours} giờ trước`;
+      return `${diffDays} ngày trước`;
+    };
+
+    const recentTopics = recentTopicsRaw.map((t) => ({
+      id: t.id,
+      name: t.name,
+      wordCount: t.vocabularies.length,
+      status: t.status,
+      updatedAt: formatRelativeTime(t.updatedAt),
+    }));
+
+    return {
+      stats: {
+        totalTopics,
+        totalWords,
+        draftWords,
+        needsAttentionCount,
+      },
+      growth,
+      healthAlerts: topHealthAlerts,
+      recentTopics,
+    };
+  }
+
   async findCourses(search?: string, status?: string) {
     const parsedStatus = this.parseStatus(status);
     const where: Prisma.CourseWhereInput = {
@@ -164,11 +324,17 @@ export class AdminService {
     return course;
   }
 
-  async findLessons(search?: string, status?: string, courseId?: string) {
+  async findLessons(
+    search?: string,
+    status?: string,
+    courseId?: string,
+    moduleId?: string,
+  ) {
     const parsedStatus = this.parseStatus(status);
     const where: Prisma.LessonWhereInput = {
       ...(parsedStatus ? { status: parsedStatus } : {}),
       ...(courseId ? { courseId } : {}),
+      ...(moduleId ? { moduleId } : {}),
       ...(search
         ? {
             OR: [

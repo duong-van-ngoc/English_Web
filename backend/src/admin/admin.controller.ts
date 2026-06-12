@@ -64,11 +64,13 @@ export class AdminController {
     @Query('search') search?: string,
     @Query('status') status?: string,
     @Query('courseId') courseId?: string,
+    @Query('moduleId') moduleId?: string,
   ): Promise<ApiResponse<unknown>> {
     const lessons = await this.adminService.findLessons(
       search,
       status,
       courseId,
+      moduleId,
     );
 
     return {
@@ -116,6 +118,17 @@ export class AdminController {
       success: true,
       message: 'Admin question fetched successfully',
       data: question,
+    };
+  }
+
+  @Get('vocabulary/dashboard')
+  async getVocabularyDashboard(): Promise<ApiResponse<unknown>> {
+    const dashboard = await this.adminService.getVocabularyDashboard();
+
+    return {
+      success: true,
+      message: 'Admin vocabulary dashboard fetched successfully',
+      data: dashboard,
     };
   }
 

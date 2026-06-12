@@ -66,7 +66,7 @@ function LoginForm() {
     try {
       const result = await api.login(values);
       await login(result.accessToken);
-      router.push("/home");
+      router.push("/");
     } catch (error) {
       setFeedback(getSubmitError(error, "Đăng nhập thất bại."));
     }

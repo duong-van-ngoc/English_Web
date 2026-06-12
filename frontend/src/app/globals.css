@@ -32,7 +32,7 @@
   --color-warning: var(--warning);
   --color-error: var(--error);
   --color-hover: var(--hover);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -51,7 +51,7 @@ body {
     linear-gradient(90deg, rgba(8, 145, 178, 0.08) 1px, transparent 1px);
   background-size: 48px 48px;
   color: var(--text-primary);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), "Inter", Arial, Helvetica, sans-serif;
 }
 
 a {

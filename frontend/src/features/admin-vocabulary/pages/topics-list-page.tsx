@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTopics } from "../hooks/use-topics";
-import { useTopicDetail } from "../hooks/use-topic-detail";
 import { TopicTable } from "../components/topics/topic-table";
 import { TopicFilterBar } from "../components/topics/topic-filter-bar";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { VOCABULARY_ROUTES } from "../constants/vocabulary-routes";
 import { Dialog } from "@/components/ui/dialog";
+import { Pagination } from "@/components/ui/pagination";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { vocabularyTopicService } from "../services/vocabulary-topic.service";
 
 export function TopicsListPage() {
   const { topics, isLoading, refetch } = useTopics();
@@ -18,21 +20,83 @@ export function TopicsListPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [sortBy, setSortBy] = useState("updatedAt_desc");
 
-  // Lock/Unlock/Delete state
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  // Reset to page 1 whenever filters or search criteria change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, sortBy]);
+
+  // Mutate state with react-query mutations
+  const queryClient = useQueryClient();
   const [activeTopicId, setActiveTopicId] = useState<string>("");
-  const { updateTopic, deleteTopic } = useTopicDetail(activeTopicId);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  const updateTopicMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) =>
+      vocabularyTopicService.updateTopic(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vocabulary-topics"] });
+      refetch();
+    },
+  });
+
+  const publishTopicMutation = useMutation({
+    mutationFn: (id: string) => vocabularyTopicService.publishTopic(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vocabulary-topics"] });
+      refetch();
+    },
+  });
+
+  const unpublishTopicMutation = useMutation({
+    mutationFn: (id: string) => vocabularyTopicService.unpublishTopic(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vocabulary-topics"] });
+      refetch();
+    },
+  });
+
+  const deleteTopicMutation = useMutation({
+    mutationFn: (id: string) => vocabularyTopicService.deleteTopic(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vocabulary-topics"] });
+      refetch();
+    },
+  });
+
   const handleLockTopic = async (id: string) => {
-    setActiveTopicId(id);
-    await updateTopic({ status: "LOCKED" });
-    refetch();
+    try {
+      await updateTopicMutation.mutateAsync({ id, payload: { status: "LOCKED" } });
+    } catch (err: any) {
+      alert(err.message || "Không thể khóa chủ đề.");
+    }
   };
 
   const handleUnlockTopic = async (id: string) => {
-    setActiveTopicId(id);
-    await updateTopic({ status: "DRAFT" });
-    refetch();
+    try {
+      await updateTopicMutation.mutateAsync({ id, payload: { status: "DRAFT" } });
+    } catch (err: any) {
+      alert(err.message || "Không thể mở khóa chủ đề.");
+    }
+  };
+
+  const handlePublishTopic = async (id: string) => {
+    try {
+      await publishTopicMutation.mutateAsync(id);
+    } catch (err: any) {
+      alert(err.message || "Không thể xuất bản chủ đề. Vui lòng kiểm tra lại số lượng từ vựng đã xuất bản.");
+    }
+  };
+
+  const handleUnpublishTopic = async (id: string) => {
+    try {
+      await unpublishTopicMutation.mutateAsync(id);
+    } catch (err: any) {
+      alert(err.message || "Không thể hủy xuất bản chủ đề.");
+    }
   };
 
   const handleDeleteTrigger = (id: string) => {
@@ -41,10 +105,13 @@ export function TopicsListPage() {
   };
 
   const handleDeleteConfirm = async () => {
-    await deleteTopic();
-    setIsDeleteDialogOpen(false);
-    setActiveTopicId("");
-    refetch();
+    try {
+      await deleteTopicMutation.mutateAsync(activeTopicId);
+      setIsDeleteDialogOpen(false);
+      setActiveTopicId("");
+    } catch (err: any) {
+      alert(err.message || "Không thể xóa chủ đề.");
+    }
   };
 
   // Filter and sort client-side for mock data
@@ -63,6 +130,12 @@ export function TopicsListPage() {
       if (sortBy === "updatedAt_asc") return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(); // updatedAt_desc
     });
+
+  const totalPages = Math.ceil(filteredTopics.length / pageSize);
+  const paginatedTopics = filteredTopics.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
@@ -100,12 +173,23 @@ export function TopicsListPage() {
           {isLoading ? (
             <div className="py-12 text-center text-text-secondary">Đang tải danh sách chủ đề...</div>
           ) : (
-            <TopicTable
-              topics={filteredTopics}
-              onLock={handleLockTopic}
-              onUnlock={handleUnlockTopic}
-              onDelete={handleDeleteTrigger}
-            />
+            <>
+              <TopicTable
+                topics={paginatedTopics}
+                onLock={handleLockTopic}
+                onUnlock={handleUnlockTopic}
+                onPublish={handlePublishTopic}
+                onUnpublish={handleUnpublishTopic}
+                onDelete={handleDeleteTrigger}
+              />
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                pageSize={pageSize}
+                totalItems={filteredTopics.length}
+              />
+            </>
           )}
         </CardContent>
       </Card>

@@ -18,7 +18,15 @@ interface TopicDetailPageProps {
 
 export function TopicDetailPage({ params }: TopicDetailPageProps) {
   const { topicId } = use(params);
-  const { topic, updateTopic, isLoading: isTopicLoading } = useTopicDetail(topicId);
+  const {
+    topic,
+    updateTopic,
+    publishTopic,
+    unpublishTopic,
+    isPublishing,
+    isUnpublishing,
+    isLoading: isTopicLoading
+  } = useTopicDetail(topicId);
   const { words, isLoading: isWordsLoading } = useTopicWords(topicId);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -28,6 +36,22 @@ export function TopicDetailPage({ params }: TopicDetailPageProps) {
       setIsEditing(false);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      await publishTopic();
+    } catch (err: any) {
+      alert(err.message || "Không thể xuất bản chủ đề. Vui lòng kiểm tra lại số lượng từ vựng đã xuất bản.");
+    }
+  };
+
+  const handleUnpublish = async () => {
+    try {
+      await unpublishTopic();
+    } catch (err: any) {
+      alert(err.message || "Không thể hủy xuất bản chủ đề.");
     }
   };
 
@@ -66,6 +90,28 @@ export function TopicDetailPage({ params }: TopicDetailPageProps) {
           </h2>
         </div>
         <div className="flex items-center gap-3">
+          {topic.status === "DRAFT" && (
+            <Button
+              variant="secondary"
+              className="gap-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50 bg-white/50"
+              disabled={isPublishing}
+              onClick={handlePublish}
+            >
+              <span className="material-symbols-outlined text-emerald-600">publish</span>
+              Xuất bản chủ đề
+            </Button>
+          )}
+          {topic.status === "PUBLISHED" && (
+            <Button
+              variant="secondary"
+              className="gap-2 border-amber-600 text-amber-600 hover:bg-amber-50 bg-white/50"
+              disabled={isUnpublishing}
+              onClick={handleUnpublish}
+            >
+              <span className="material-symbols-outlined text-amber-600">unpublished</span>
+              Hủy xuất bản
+            </Button>
+          )}
           <Link href={VOCABULARY_ROUTES.PREVIEW_STUDENT(topicId)} passHref legacyBehavior>
             <Button variant="secondary" className="gap-2">
               <span className="material-symbols-outlined">school</span>

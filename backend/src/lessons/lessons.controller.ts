@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { UserRole, type Lesson } from '@prisma/client';
@@ -25,8 +26,9 @@ export class LessonsController {
   @Get('courses/:courseId/lessons')
   async findByCourse(
     @Param('courseId') courseId: string,
+    @Query('moduleId') moduleId?: string,
   ): Promise<ApiResponse<Lesson[]>> {
-    const lessons = await this.lessonsService.findByCourse(courseId);
+    const lessons = await this.lessonsService.findByCourse(courseId, moduleId);
 
     return {
       success: true,

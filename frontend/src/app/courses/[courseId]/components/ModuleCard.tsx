@@ -13,14 +13,47 @@ import {
   HelpCircle,
 } from "lucide-react";
 import type { VstepModule } from "../data/vstepModules";
+import type { CourseModule } from "@/types";
 
 interface ModuleCardProps {
-  module: VstepModule;
+  module: VstepModule | CourseModule;
   courseId: string;
 }
 
 export function ModuleCard({ module, courseId }: ModuleCardProps) {
-  const { title, subtitle, description, lessons, quizzes, progress, status, iconName, slug } = module;
+  const getModuleMetaData = (type: string) => {
+    switch (type) {
+      case "GRAMMAR":
+        return { subtitle: "Nền tảng ngữ pháp", lessons: 12, quizzes: 3, progress: 60, status: "in-progress" as const, iconName: "Grammar" as const };
+      case "VOCABULARY":
+        return { subtitle: "Từ vựng theo chủ đề", lessons: 15, quizzes: 5, progress: 30, status: "in-progress" as const, iconName: "Vocabulary" as const };
+      case "LISTENING":
+        return { subtitle: "Luyện nghe", lessons: 10, quizzes: 4, progress: 15, status: "in-progress" as const, iconName: "Listening" as const };
+      case "READING":
+        return { subtitle: "Luyện đọc", lessons: 10, quizzes: 4, progress: 20, status: "in-progress" as const, iconName: "Reading" as const };
+      case "WRITING":
+        return { subtitle: "Luyện viết", lessons: 12, quizzes: 3, progress: 0, status: "not-started" as const, iconName: "Writing" as const };
+      case "SPEAKING":
+        return { subtitle: "Luyện nói", lessons: 12, quizzes: 3, progress: 0, status: "not-started" as const, iconName: "Speaking" as const };
+      case "MOCK_TESTS":
+        return { subtitle: "Đề thi thử", lessons: 8, quizzes: 8, progress: 0, status: "locked" as const, iconName: "MockTests" as const };
+      default:
+        return { subtitle: "Bài học kỹ năng", lessons: 10, quizzes: 2, progress: 0, status: "not-started" as const, iconName: "Grammar" as const };
+    }
+  };
+
+  const isDbModule = "type" in module;
+  const meta = isDbModule ? getModuleMetaData(module.type) : {
+    subtitle: module.subtitle,
+    lessons: module.lessons,
+    quizzes: module.quizzes,
+    progress: module.progress,
+    status: module.status,
+    iconName: module.iconName,
+  };
+
+  const { title, description, slug } = module;
+  const { subtitle, lessons, quizzes, progress, status, iconName } = meta;
 
   // Map icon strings to Lucide icon components
   const getIcon = () => {

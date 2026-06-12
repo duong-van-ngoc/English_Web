@@ -19,11 +19,13 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Topic } from "./data";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 
 export default function VocabularyTopicsPage() {
   const params = useParams();
   const router = useRouter();
   const courseId = (params?.courseId as string) || "on-thi-vstep-b1";
+  const { status } = useAuth({ redirectToLogin: true });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "in-progress" | "completed" | "updated" | "locked">("all");
@@ -42,6 +44,7 @@ export default function VocabularyTopicsPage() {
   const [recentTopic, setRecentTopic] = useState<{ id: string; name: string; progress: number } | null>(null);
 
   useEffect(() => {
+    if (status !== "authenticated") return;
     async function loadData() {
       try {
         setIsLoading(true);
@@ -95,14 +98,15 @@ export default function VocabularyTopicsPage() {
         
         setTopics(updatedTopics);
 
-        let avgScore = 82;
-        if (typeof window !== "undefined") {
-          const storedAttempts = localStorage.getItem("vocab_quiz_attempts");
-          const attemptsList = storedAttempts ? JSON.parse(storedAttempts) : [];
-          if (attemptsList.length > 0) {
+        let avgScore = 0;
+        try {
+          const attemptsList = await api.getQuizAttempts(courseId);
+          if (attemptsList && attemptsList.length > 0) {
             const sum = attemptsList.reduce((acc: number, item: any) => acc + item.score, 0);
             avgScore = Math.round(sum / attemptsList.length);
           }
+        } catch (err) {
+          console.error("Failed to fetch quiz attempts:", err);
         }
 
         setStats({
@@ -149,7 +153,7 @@ export default function VocabularyTopicsPage() {
     }
 
     loadData();
-  }, [courseId]);
+  }, [courseId, status]);
 
   if (isLoading) {
     return (

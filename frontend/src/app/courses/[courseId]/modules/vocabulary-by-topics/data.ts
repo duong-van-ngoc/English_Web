@@ -2,7 +2,7 @@ export interface Word {
   id: string;
   word: string;
   ipa: string;
-  partOfSpeech: "noun" | "verb" | "adjective" | "adverb" | "phrase";
+  partOfSpeech: "noun" | "verb" | "adjective" | "adverb" | "phrase" | "noun phrase" | "verb phrase" | "phrasal verb";
   meaningVi: string;
   exampleEn: string;
   exampleVi: string;
@@ -10,6 +10,7 @@ export interface Word {
   collocations: string[];
   wordFamily: string[];
   commonMistakes: string[];
+  note?: string | null;
 }
 
 export interface Topic {

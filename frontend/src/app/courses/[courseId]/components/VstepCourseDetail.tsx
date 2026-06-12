@@ -9,12 +9,16 @@ import { ContinueLearningCard } from "./ContinueLearningCard";
 import { ModuleList } from "./ModuleList";
 import { CourseSidebar } from "./CourseSidebar";
 import { VSTEP_MODULES } from "../data/vstepModules";
+import type { CourseModule } from "@/types";
 
 interface VstepCourseDetailProps {
   courseId: string;
+  modules?: CourseModule[];
 }
 
-export function VstepCourseDetail({ courseId }: VstepCourseDetailProps) {
+export function VstepCourseDetail({ courseId, modules = [] }: VstepCourseDetailProps) {
+  const displayModules = modules.length > 0 ? modules : VSTEP_MODULES;
+
   // Mock active learning state
   const [currentModule] = useState("Grammar Foundation");
   const [currentLesson] = useState("Bài 3: Simple Sentences");
@@ -68,7 +72,7 @@ export function VstepCourseDetail({ courseId }: VstepCourseDetailProps) {
             />
 
             {/* 4. Modules Checklist Grid */}
-            <ModuleList modules={VSTEP_MODULES} courseId={courseId} />
+            <ModuleList modules={displayModules} courseId={courseId} />
           </div>
 
           {/* Sidebar Area (1 column) */}
