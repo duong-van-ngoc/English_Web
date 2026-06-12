@@ -4,4 +4,5 @@ export const IMPORT_TEMPLATE_COLUMNS = [
   { key: "meaning", label: "Nghĩa tiếng Việt (Meaning)*", required: true },
   { key: "partOfSpeech", label: "Từ loại (Part of Speech)*", required: true },
   { key: "example", label: "Ví dụ (Example)", required: false },
+  { key: "exampleVi", label: "Dịch nghĩa ví dụ (Example Translation)", required: false },
 ];

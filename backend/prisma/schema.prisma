@@ -29,6 +29,16 @@ enum ContentStatus {
   ARCHIVED
 }
 
+enum ModuleType {
+  GRAMMAR
+  VOCABULARY
+  LISTENING
+  READING
+  WRITING
+  SPEAKING
+  MOCK_TESTS
+}
+
 enum ToeicQuestionSetType {
   PRACTICE
   MOCK_TEST
@@ -65,6 +75,7 @@ model User {
   toeicAttempts       ToeicAttempt[]
   toeicWrongQuestions ToeicUserWrongQuestion[]
   vocabularyReviews   VocabularyReview[]
+  vocabularyQuizAttempts VocabularyQuizAttempt[]
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
 }
@@ -80,13 +91,37 @@ model Course {
   lessons          Lesson[]
   progress         Progress[]
   vocabularyTopics VocabularyTopic[]
+  modules          Module[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+}
+
+model Module {
+  id               String            @id @default(cuid())
+  courseId         String
+  course           Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title            String
+  slug             String
+  description      String?
+  type             ModuleType
+  icon             String?
+  order            Int               @default(0)
+  isPublished      Boolean           @default(true)
+  lessons          Lesson[]
+  vocabularyTopics VocabularyTopic[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([courseId, slug])
+  @@index([courseId])
+  @@index([type])
 }
 
 model Lesson {
   id          String        @id @default(cuid())
   courseId    String
+  moduleId    String?
+  module      Module?       @relation(fields: [moduleId], references: [id], onDelete: SetNull)
   title       String
   content     String
   order       Int
@@ -364,6 +399,8 @@ model VocabularyReview {
 model VocabularyTopic {
   id          String        @id @default(cuid())
   courseId    String
+  moduleId    String?
+  module      Module?       @relation(fields: [moduleId], references: [id], onDelete: SetNull)
   course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
   name        String
   slug        String
@@ -384,4 +421,21 @@ model VocabularyTopic {
   @@index([status])
   @@index([deletedAt])
   @@unique([courseId, slug])
+}
+
+model VocabularyQuizAttempt {
+  id           String   @id @default(cuid())
+  userId       String
+  topicId      String
+  topicName    String
+  score        Int
+  correctCount Int
+  wrongCount   Int
+  isPassed     Boolean
+  wrongAnswers Json
+  timestamp    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
 }

@@ -86,6 +86,7 @@ export interface Question {
 export interface Lesson {
   id: string;
   courseId: string;
+  moduleId?: string | null;
   title: string;
   content: string;
   order: number;
@@ -172,6 +173,7 @@ export interface LessonPayload {
   title: string;
   content: string;
   order: number;
+  moduleId?: string | null;
 }
 
 export interface VocabularyPayload {
@@ -437,4 +439,47 @@ export interface VocabularyReviewResult {
   reviewCount: number;
   lastReviewedAt: string | null;
   nextReviewAt: string;
+}
+
+export type ModuleType =
+  | "GRAMMAR"
+  | "VOCABULARY"
+  | "LISTENING"
+  | "READING"
+  | "WRITING"
+  | "SPEAKING"
+  | "MOCK_TESTS";
+
+export interface CourseModule {
+  id: string;
+  courseId: string;
+  title: string;
+  slug: string;
+  description?: string | null;
+  type: ModuleType;
+  icon?: string | null;
+  order: number;
+  isPublished: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateCourseModulePayload {
+  title: string;
+  slug: string;
+  description?: string;
+  type: ModuleType;
+  icon?: string;
+  order?: number;
+  isPublished?: boolean;
+}
+
+export interface UpdateCourseModulePayload {
+  title?: string;
+  slug?: string;
+  description?: string;
+  type?: ModuleType;
+  icon?: string;
+  order?: number;
+  isPublished?: boolean;
 }

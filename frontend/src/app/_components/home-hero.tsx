@@ -38,7 +38,7 @@ export function HomeHero() {
           <Image
             alt="Học viên đang ôn luyện thi tiếng Anh trực tuyến cùng EnglishTobi"
             className="w-full h-auto rounded-2xl object-cover"
-            src="https://lh3.googleusercontent.com/aida/AP1WRLtDhGWIW-McSDIuoqwjvvIFFv5EBiDyGL2TMDr9-uhndk4ZjBMkatiyRBWjMsjIr-L3UjRelyEYGWC35j6eQeLsa2U6oPrk8DSDARhKlAU12oJfkWTceh2U0bU09OwuCreGm-NGh02v9X34HjYDX4UuUd8SIdNW_X9cvJ3jwRx9l5r-SWD79iP-bgEdVVbjCjjFxT5hCBfBg3C8qqNtWLhSijA221Mr5K7KIK_5gai8ruwZpF4V9W5y9Rg"
+            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200&auto=format&fit=crop"
             width={600}
             height={400}
             priority

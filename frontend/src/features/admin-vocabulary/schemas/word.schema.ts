@@ -17,6 +17,10 @@ export const wordFormSchema = z.object({
     .string()
     .max(500, "Ví dụ quá dài")
     .optional(),
+  exampleVi: z
+    .string()
+    .max(500, "Dịch nghĩa ví dụ quá dài")
+    .optional(),
   audioUrl: z
     .string()
     .url("Đường dẫn audio không hợp lệ")

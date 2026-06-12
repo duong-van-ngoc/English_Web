@@ -97,9 +97,9 @@ export const MOCK_COURSES: CourseWithStats[] = [
   },
   {
     id: "course-mock-8",
-    title: "VSTEP Speaking & Writing",
+    title: "Ôn thi vstep",
     slug: "vstep-speaking-writing",
-    description: "Luyện nói và viết theo các chủ đề thường gặp trong VSTEP, kèm bài mẫu và gợi ý cấu trúc câu.",
+    description: "abcd",
     level: "vstep",
     status: "PUBLISHED",
     lessonsCount: 25,

@@ -7,6 +7,7 @@ export interface VocabularyTopic {
   imageUrl?: string;
   status: TopicStatus;
   wordCount: number;
+  moduleId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -16,4 +17,5 @@ export interface VocabularyTopicPayload {
   description?: string;
   imageUrl?: string;
   status?: TopicStatus;
+  moduleId?: string | null;
 }

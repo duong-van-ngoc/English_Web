@@ -54,32 +54,32 @@ export function RecentlyUpdatedTopics({ topics }: RecentlyUpdatedTopicsProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Tên chủ đề</TableHead>
-              <TableHead>Số lượng từ</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead>Cập nhật lần cuối</TableHead>
-              <TableHead className="text-right">Thao tác</TableHead>
+              <TableHead className="whitespace-nowrap">Tên chủ đề</TableHead>
+              <TableHead className="whitespace-nowrap">Số lượng từ</TableHead>
+              <TableHead className="whitespace-nowrap">Trạng thái</TableHead>
+              <TableHead className="whitespace-nowrap">Cập nhật lần cuối</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {list.map((topic) => (
               <TableRow key={topic.id}>
-                <TableCell className="font-bold">
+                <TableCell className="font-bold whitespace-nowrap">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded bg-gradient-to-br from-primary to-secondary/30 flex items-center justify-center text-white">
+                    <div className="w-8 h-8 rounded bg-gradient-to-br from-primary to-secondary/30 flex items-center justify-center text-white shrink-0">
                       <span className="material-symbols-outlined text-sm">rocket_launch</span>
                     </div>
                     <span>{topic.name}</span>
                   </div>
                 </TableCell>
-                <TableCell>{topic.wordCount} từ</TableCell>
-                <TableCell>
+                <TableCell className="whitespace-nowrap">{topic.wordCount} từ</TableCell>
+                <TableCell className="whitespace-nowrap">
                   <StatusBadge status={topic.status} />
                 </TableCell>
-                <TableCell className="text-text-secondary/80 text-xs">{topic.updatedAt}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-text-secondary/80 text-xs whitespace-nowrap">{topic.updatedAt}</TableCell>
+                <TableCell className="text-right whitespace-nowrap">
                   <Link href={VOCABULARY_ROUTES.TOPIC_DETAIL(topic.id)} passHref legacyBehavior>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" className="whitespace-nowrap">
                       Quản lý
                     </Button>
                   </Link>

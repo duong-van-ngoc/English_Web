@@ -3,10 +3,11 @@ import {
   PrismaClient,
   QuestionType,
   UserRole,
+  ModuleType,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { createPrismaAdapter } from '../src/prisma/prisma-adapter';
-import { VSTEP_SEED_TOPICS } from './vstep-seed-data';
+
 
 const prisma = new PrismaClient({
   adapter: createPrismaAdapter(),
@@ -644,41 +645,124 @@ async function main(): Promise<void> {
     },
   });
 
-  // Clear existing topics for this course to start clean on seed
-  await prisma.vocabularyTopic.deleteMany({
-    where: { courseId: vstepCourse.id },
-  });
+  // Seed VSTEP Modules
+  const defaultModules = [
+    {
+      title: 'Grammar Foundation',
+      slug: 'grammar',
+      description: 'Học nền tảng ngữ pháp quan trọng cho kỳ thi VSTEP.',
+      type: ModuleType.GRAMMAR,
+      icon: 'book-open',
+      order: 1,
+    },
+    {
+      title: 'Vocabulary Builder',
+      slug: 'vocabulary',
+      description: 'Học từ vựng theo chủ đề thường gặp trong VSTEP.',
+      type: ModuleType.VOCABULARY,
+      icon: 'text',
+      order: 2,
+    },
+    {
+      title: 'Listening Practice',
+      slug: 'listening',
+      description: 'Luyện nghe theo cấu trúc đề thi VSTEP.',
+      type: ModuleType.LISTENING,
+      icon: 'headphones',
+      order: 3,
+    },
+    {
+      title: 'Reading Practice',
+      slug: 'reading',
+      description: 'Luyện đọc hiểu và kỹ năng xử lý bài đọc.',
+      type: ModuleType.READING,
+      icon: 'book',
+      order: 4,
+    },
+    {
+      title: 'Writing Practice',
+      slug: 'writing',
+      description: 'Luyện viết thư, bài luận và các dạng Writing VSTEP.',
+      type: ModuleType.WRITING,
+      icon: 'pen-tool',
+      order: 5,
+    },
+    {
+      title: 'Speaking Practice',
+      slug: 'speaking',
+      description: 'Luyện nói theo Part 1, Part 2 và Part 3 của VSTEP.',
+      type: ModuleType.SPEAKING,
+      icon: 'mic',
+      order: 6,
+    },
+    {
+      title: 'Mock Tests',
+      slug: 'mock-tests',
+      description: 'Làm đề thi thử mô phỏng cấu trúc VSTEP thật.',
+      type: ModuleType.MOCK_TESTS,
+      icon: 'clipboard-check',
+      order: 7,
+    },
+  ];
 
-  for (const [topicIndex, topicSeed] of VSTEP_SEED_TOPICS.entries()) {
-    await prisma.vocabularyTopic.create({
-      data: {
-        courseId: vstepCourse.id,
-        name: topicSeed.name,
-        slug: topicSeed.id,
-        description: topicSeed.description,
-        icon: topicSeed.icon,
-        status: topicSeed.status,
-        order: topicIndex + 1,
-        vocabularies: {
-          create: topicSeed.words.map((w, wordIndex) => ({
-            word: w.word,
-            meaning: w.meaning,
-            phonetic: w.phonetic,
-            partOfSpeech: w.partOfSpeech,
-            example: w.example,
-            exampleVi: w.exampleVi,
-            status: ContentStatus.PUBLISHED,
-            order: wordIndex + 1,
-            tags: [],
-            synonyms: w.synonyms,
-            collocations: w.collocations,
-            wordFamily: w.wordFamily,
-            commonMistakes: w.commonMistakes,
-          })),
+  for (const moduleItem of defaultModules) {
+    await prisma.module.upsert({
+      where: {
+        courseId_slug: {
+          courseId: vstepCourse.id,
+          slug: moduleItem.slug,
         },
+      },
+      update: {
+        title: moduleItem.title,
+        description: moduleItem.description,
+        type: moduleItem.type,
+        icon: moduleItem.icon,
+        order: moduleItem.order,
+        isPublished: true,
+      },
+      create: {
+        courseId: vstepCourse.id,
+        title: moduleItem.title,
+        slug: moduleItem.slug,
+        description: moduleItem.description,
+        type: moduleItem.type,
+        icon: moduleItem.icon,
+        order: moduleItem.order,
+        isPublished: true,
       },
     });
   }
+
+  // 1. Get Grammar & Vocabulary module IDs for migration/seeding
+  const grammarModule = await prisma.module.findFirst({
+    where: {
+      courseId: vstepCourse.id,
+      type: ModuleType.GRAMMAR,
+    },
+  });
+
+  const vocabModule = await prisma.module.findFirst({
+    where: {
+      courseId: vstepCourse.id,
+      type: ModuleType.VOCABULARY,
+    },
+  });
+
+  // 2. Migrate existing lessons to Grammar module
+  if (grammarModule) {
+    await prisma.lesson.updateMany({
+      where: {
+        courseId: vstepCourse.id,
+        moduleId: null,
+      },
+      data: {
+        moduleId: grammarModule.id,
+      },
+    });
+  }
+
+
 
   const firstCourse = await prisma.course.findUniqueOrThrow({
     where: {

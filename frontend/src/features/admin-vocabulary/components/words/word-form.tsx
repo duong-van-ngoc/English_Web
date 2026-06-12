@@ -32,6 +32,7 @@ export function WordForm({ initialValues, onSubmit, isLoading = false }: WordFor
       phonetic: initialValues?.phonetic || "",
       meaning: initialValues?.meaning || "",
       example: initialValues?.example || "",
+      exampleVi: initialValues?.exampleVi || "",
       partOfSpeech: initialValues?.partOfSpeech || "noun",
       status: initialValues?.status || "DRAFT",
       imageUrl: initialValues?.imageUrl || "",
@@ -99,6 +100,21 @@ export function WordForm({ initialValues, onSubmit, isLoading = false }: WordFor
         {errors.example && (
           <span className="text-xs text-error font-medium">
             {errors.example.message}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5 w-full">
+        <span className="text-sm font-semibold text-text-primary">Dịch nghĩa câu ví dụ (Tiếng Việt)</span>
+        <textarea
+          rows={2}
+          placeholder="Ví dụ: Khí hậu đang thay đổi nhanh chóng."
+          className="input-glass rounded-xl px-4 py-2 text-sm font-medium text-text-primary placeholder:text-text-secondary/50 focus:outline-none w-full leading-relaxed"
+          {...register("exampleVi")}
+        />
+        {errors.exampleVi && (
+          <span className="text-xs text-error font-medium">
+            {errors.exampleVi.message}
           </span>
         )}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -16,10 +16,32 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+
+const highlightWord = (text: string, keyword: string) => {
+  if (!text || !keyword) return text;
+  
+  const escapedKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const regex = new RegExp(`\\b(${escapedKeyword}(?:s|es|ed|ing|d)?)\\b`, 'gi');
+  
+  const parts = text.split(regex);
+  
+  return parts.map((part, index) => {
+    if (index % 2 === 1) {
+      return (
+        <span key={index} className="text-red-600 font-extrabold px-0.5 rounded bg-red-50 border border-red-100">
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
+};
 
 export default function FlashcardLearnRedesignPage() {
   const params = useParams();
   const router = useRouter();
+  const { status } = useAuth({ redirectToLogin: true });
   
   const courseId = (params?.courseId as string) || "on-thi-vstep-b1";
   const topicId = (params?.topicId as string) || "environment";
@@ -33,11 +55,15 @@ export default function FlashcardLearnRedesignPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Ref to hold the current audio instance to prevent overlapping audio
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   // Stats for current session
   const [knownCount, setKnownCount] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
 
   useEffect(() => {
+    if (status !== "authenticated") return;
     async function loadTopicData() {
       try {
         setIsLoading(true);
@@ -74,7 +100,19 @@ export default function FlashcardLearnRedesignPage() {
       }
     }
     loadTopicData();
-  }, [topicId, courseId, router]);
+  }, [topicId, courseId, router, status]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -96,9 +134,37 @@ export default function FlashcardLearnRedesignPage() {
 
   const currentWord = words[currentIndex];
 
-  const playTTS = (text: string) => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+  const playGoogleTTS = (text: string) => {
+    try {
       setAudioPlaying(true);
+
+      // Stop previous audio if playing
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
+      const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodeURIComponent(
+        text
+      )}`;
+      const audio = new Audio(googleTtsUrl);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setAudioPlaying(false);
+        audioRef.current = null;
+      };
+      audio.onerror = () => {
+        playBrowserTTS(text);
+      };
+      audio.play().catch(() => playBrowserTTS(text));
+    } catch (e) {
+      playBrowserTTS(text);
+    }
+  };
+
+  const playBrowserTTS = (text: string) => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "en-US";
@@ -106,8 +172,39 @@ export default function FlashcardLearnRedesignPage() {
       utterance.onend = () => setAudioPlaying(false);
       utterance.onerror = () => setAudioPlaying(false);
       window.speechSynthesis.speak(utterance);
+    } else {
+      setAudioPlaying(false);
     }
   };
+
+  const playTTS = (text: string) => {
+    // Stop previous audio if playing
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    // 1. Ưu tiên phát file Audio có sẵn của từ vựng nếu có
+    if (currentWord?.audioUrl) {
+      setAudioPlaying(true);
+      const audio = new Audio(currentWord.audioUrl);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setAudioPlaying(false);
+        audioRef.current = null;
+      };
+      audio.onerror = () => {
+        playGoogleTTS(text);
+      };
+      audio.play().catch(() => playGoogleTTS(text));
+    } else {
+      // 2. Nếu không có file audio riêng, dùng Google Translate TTS cho mượt mà
+      playGoogleTTS(text);
+    }
+  };
+
+
 
   // Mark word as known and advance
   const markAsKnown = async () => {
@@ -319,11 +416,13 @@ export default function FlashcardLearnRedesignPage() {
                         <p className="text-[9px] font-bold text-text-secondary uppercase tracking-wider">Ví dụ ngữ cảnh</p>
                         <div className="glass-panel p-4 rounded-2xl bg-white/40 border border-cyan-50">
                           <p className="text-xs font-bold text-text-primary italic leading-relaxed mb-1">
-                            &ldquo;{currentWord.exampleEn}&rdquo;
+                            &ldquo;{highlightWord(currentWord.exampleEn, currentWord.word)}&rdquo;
                           </p>
-                          <p className="text-[11px] text-text-secondary">
-                            &rarr; {currentWord.exampleVi}
-                          </p>
+                          {currentWord.exampleVi && (
+                            <p className="text-[11px] text-text-secondary">
+                              &rarr; {currentWord.exampleVi}
+                            </p>
+                          )}
                         </div>
                       </div>
 

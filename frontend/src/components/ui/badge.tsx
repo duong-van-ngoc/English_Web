@@ -10,7 +10,7 @@ export function Badge({
   variant = "info",
   ...props
 }: BadgeProps) {
-  const baseStyles = "px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider border";
+  const baseStyles = "inline-flex items-center whitespace-nowrap px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider border";
 
   const variants = {
     primary: "bg-primary/10 border-primary/20 text-primary",

@@ -39,6 +39,20 @@ export default function SavedWordsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [editingNoteWordId, setEditingNoteWordId] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState("");
+
+  const handleSaveNote = async (wordId: string) => {
+    try {
+      await api.updateWordNote(wordId, noteText);
+      setSavedWords(prev => prev.map(w => w.id === wordId ? { ...w, note: noteText ? noteText : null } : w));
+      setEditingNoteWordId(null);
+    } catch (err) {
+      console.error("Failed to save note:", err);
+      alert("Không thể lưu ghi chú. Vui lòng thử lại.");
+    }
+  };
+
   useEffect(() => {
     async function loadSavedWords() {
       try {
@@ -70,6 +84,7 @@ export default function SavedWordsPage() {
                   collocations: w.collocations || [],
                   wordFamily: w.wordFamily || [],
                   commonMistakes: w.commonMistakes || [],
+                  note: w.note || null,
                   topicId: topicData.id,
                   topicSlug: topicData.slug,
                   topicName: topicData.name,
@@ -114,12 +129,30 @@ export default function SavedWordsPage() {
     }
   };
 
+  const getPartOfSpeechLabel = (pos: string) => {
+    switch (pos) {
+      case "noun": return "danh từ";
+      case "verb": return "động từ";
+      case "adjective": return "tính từ";
+      case "adverb": return "trạng từ";
+      case "phrase": return "cụm từ";
+      case "noun phrase": return "cụm danh từ";
+      case "verb phrase": return "cụm động từ";
+      case "phrasal verb": return "cụm động từ";
+      default: return pos;
+    }
+  };
+
   const filteredWords = savedWords.filter((w) => {
     const matchesSearch =
       w.word.toLowerCase().includes(searchQuery.toLowerCase()) ||
       w.meaningVi.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTopic = topicFilter === "all" || w.topicSlug === topicFilter || w.topicId === topicFilter;
-    const matchesPOS = posFilter === "all" || w.partOfSpeech === posFilter;
+    const matchesPOS =
+      posFilter === "all" ||
+      w.partOfSpeech === posFilter ||
+      (posFilter === "phrasal verb" && (w.partOfSpeech === "phrasal verb" || w.partOfSpeech === "verb phrase")) ||
+      (posFilter === "phrase" && (w.partOfSpeech === "noun phrase" || w.partOfSpeech === "verb phrase" || w.partOfSpeech === "phrasal verb"));
 
     return matchesSearch && matchesTopic && matchesPOS;
   });
@@ -223,6 +256,7 @@ export default function SavedWordsPage() {
               <option value="verb">Động từ (v)</option>
               <option value="adjective">Tính từ (adj)</option>
               <option value="adverb">Trạng từ (adv)</option>
+              <option value="phrasal verb">Cụm động từ (phrasal verb)</option>
               <option value="phrase">Cụm từ (phrase)</option>
             </select>
           </div>
@@ -308,7 +342,7 @@ export default function SavedWordsPage() {
                         <div className="space-y-1.5">
                           <h4 className="font-bold text-text-primary uppercase tracking-wider text-[10px]">Định nghĩa tiếng Việt</h4>
                           <p className="text-text-secondary font-medium pl-3 border-l-2 border-primary/30">
-                            {word.meaningVi} ({word.partOfSpeech})
+                            {word.meaningVi} ({getPartOfSpeechLabel(word.partOfSpeech)})
                           </p>
                         </div>
                         <div className="space-y-1.5">
@@ -344,6 +378,63 @@ export default function SavedWordsPage() {
                                 </span>
                               ))}
                             </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Personal Notes Section */}
+                      <div className="pt-4 border-t border-dashed border-slate-200/80 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <h4 className="font-bold text-text-primary uppercase tracking-wider text-[10px] flex items-center gap-1">
+                            <span className="material-symbols-outlined text-xs">edit_note</span>
+                            Ghi chú cá nhân (Personal Notes)
+                          </h4>
+                          {editingNoteWordId !== word.id && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingNoteWordId(word.id);
+                                setNoteText(word.note || "");
+                              }}
+                              className="text-[10px] font-bold text-primary hover:text-primary-dark transition-colors flex items-center gap-0.5 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-xs">edit</span>
+                              {word.note ? "Sửa ghi chú" : "Thêm ghi chú"}
+                            </button>
+                          )}
+                        </div>
+
+                        {editingNoteWordId === word.id ? (
+                          <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <textarea
+                              value={noteText}
+                              onChange={(e) => setNoteText(e.target.value)}
+                              placeholder="Nhập ghi chú cá nhân của bạn về từ này (ví dụ: mẹo ghi nhớ, ngữ cảnh đặc biệt...)"
+                              className="w-full p-2.5 rounded-xl border border-secondary-container/40 bg-white focus:ring-1 focus:ring-primary focus:border-transparent outline-none text-xs text-text-primary"
+                              rows={2}
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => setEditingNoteWordId(null)}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[10px] font-bold text-text-secondary cursor-pointer"
+                              >
+                                Hủy
+                              </button>
+                              <button
+                                onClick={() => handleSaveNote(word.id)}
+                                className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-[10px] font-bold cursor-pointer"
+                              >
+                                Lưu ghi chú
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="pl-3 border-l-2 border-slate-200">
+                            {word.note ? (
+                              <p className="text-text-primary font-medium whitespace-pre-wrap">{word.note}</p>
+                            ) : (
+                              <p className="text-text-secondary italic">Chưa có ghi chú nào cho từ này. Nhấn "Thêm ghi chú" để ghi lại mẹo học của riêng bạn.</p>
+                            )}
                           </div>
                         )}
                       </div>

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
@@ -20,6 +21,7 @@ import { CreateVocabularyTopicDto } from './dto/create-vocabulary-topic.dto';
 import { UpdateVocabularyTopicDto } from './dto/update-vocabulary-topic.dto';
 import { CreateTopicWordDto } from './dto/create-topic-word.dto';
 import { UpdateTopicWordDto } from './dto/update-topic-word.dto';
+import { CreateQuizAttemptDto } from './dto/create-quiz-attempt.dto';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ReviewStatus } from '@prisma/client';
 
@@ -49,8 +51,9 @@ export class VocabularyTopicsController {
   @Get('admin/courses/:courseId/vocabulary-topics')
   async findAllAdmin(
     @Param('courseId') courseId: string,
+    @Query('moduleId') moduleId?: string,
   ): Promise<ApiResponse<any>> {
-    const data = await this.service.findAllAdmin(courseId);
+    const data = await this.service.findAllAdmin(courseId, moduleId);
     return { success: true, message: 'Fetched admin vocabulary topics', data };
   }
 
@@ -212,6 +215,16 @@ export class VocabularyTopicsController {
     return { success: true, message: 'Unpublished vocabulary word', data };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Patch('admin/vocabulary-topics/:topicId/words/publish-all')
+  async publishAllWords(
+    @Param('topicId') topicId: string,
+  ): Promise<ApiResponse<any>> {
+    const data = await this.service.publishAllWords(topicId);
+    return { success: true, message: 'Published all draft vocabulary words in this topic', data };
+  }
+
   // ==========================================
   // USER ENDPOINTS
   // ==========================================
@@ -266,5 +279,46 @@ export class VocabularyTopicsController {
   ): Promise<ApiResponse<any>> {
     const data = await this.service.favoriteWord(user.id, wordId, false);
     return { success: true, message: 'Unfavorited word', data };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('courses/:courseId/vocabulary-topics/quiz/attempt')
+  async createQuizAttempt(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateQuizAttemptDto,
+  ): Promise<ApiResponse<any>> {
+    const data = await this.service.createQuizAttempt(user.id, dto);
+    return { success: true, message: 'Created vocabulary quiz attempt', data };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('courses/:courseId/vocabulary-topics/quiz/attempts/:attemptId')
+  async getQuizAttempt(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('attemptId') attemptId: string,
+  ): Promise<ApiResponse<any>> {
+    const data = await this.service.getQuizAttempt(user.id, attemptId);
+    return { success: true, message: 'Fetched vocabulary quiz attempt details', data };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('courses/:courseId/vocabulary-topics/quiz/attempts')
+  async getQuizAttempts(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('courseId') courseId: string,
+  ): Promise<ApiResponse<any>> {
+    const data = await this.service.getQuizAttempts(user.id, courseId);
+    return { success: true, message: 'Fetched user vocabulary quiz attempts', data };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('vocabulary/:wordId/note')
+  async updateWordNote(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('wordId') wordId: string,
+    @Body('note') note: string,
+  ): Promise<ApiResponse<any>> {
+    const data = await this.service.updateWordNote(user.id, wordId, note);
+    return { success: true, message: 'Updated word personal note', data };
   }
 }

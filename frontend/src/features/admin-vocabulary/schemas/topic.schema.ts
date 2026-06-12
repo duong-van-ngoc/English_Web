@@ -15,6 +15,7 @@ export const topicFormSchema = z.object({
     .or(z.literal(""))
     .optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "LOCKED"]),
+  moduleId: z.string().nullable().optional(),
 });
 
 export type TopicFormValues = z.infer<typeof topicFormSchema>;

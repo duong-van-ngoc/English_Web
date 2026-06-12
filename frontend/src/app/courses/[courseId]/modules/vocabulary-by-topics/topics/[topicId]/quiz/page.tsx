@@ -207,7 +207,7 @@ export default function TopicQuizPage() {
     }
   };
 
-  const handleSubmitQuiz = () => {
+  const handleSubmitQuiz = async () => {
     // Check if any questions are unanswered
     const unansweredCount = questions.length - Object.keys(selectedAnswers).length;
     if (unansweredCount > 0) {
@@ -242,30 +242,28 @@ export default function TopicQuizPage() {
 
     const score = Math.round((correctCount / questions.length) * 100);
     const isPassed = score >= 70;
-    const attemptId = `attempt-${Date.now()}`;
 
-    const newAttempt = {
-      attemptId,
-      topicId,
-      topicName: topic.name,
-      score,
-      correctCount,
-      wrongCount: questions.length - correctCount,
-      isPassed,
-      wrongAnswers: wrongAnswersList,
-      timestamp: new Date().toISOString(),
-    };
+    try {
+      setIsLoading(true);
+      const attemptData = {
+        topicId: topicId,
+        topicName: topic.name,
+        score,
+        correctCount,
+        wrongCount: questions.length - correctCount,
+        isPassed,
+        wrongAnswers: wrongAnswersList,
+      };
 
-    // Save to localStorage
-    if (typeof window !== "undefined") {
-      const storedAttempts = localStorage.getItem("vocab_quiz_attempts");
-      const attemptsList = storedAttempts ? JSON.parse(storedAttempts) : [];
-      attemptsList.push(newAttempt);
-      localStorage.setItem("vocab_quiz_attempts", JSON.stringify(attemptsList));
+      const result = await api.createQuizAttempt(courseId, attemptData);
+      
+      // Redirect to result page using database generated attempt ID
+      router.push(`/courses/${courseId}/modules/vocabulary-by-topics/quiz-attempts/${result.id}/result`);
+    } catch (err: any) {
+      console.error("Failed to submit quiz attempt:", err);
+      alert(err.message || "Đã xảy ra lỗi khi nộp bài kiểm tra. Vui lòng thử lại.");
+      setIsLoading(false);
     }
-
-    // Redirect to result page
-    router.push(`/courses/${courseId}/modules/vocabulary-by-topics/quiz-attempts/${attemptId}/result`);
   };
 
   const currentQuestion = questions[currentIndex];

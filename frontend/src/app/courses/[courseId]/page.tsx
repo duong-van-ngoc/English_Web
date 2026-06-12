@@ -5,7 +5,7 @@ import { LessonList } from "@/features/lesson/components/lesson-list";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { VstepCourseDetail } from "./components/VstepCourseDetail";
 import { api, isApiError } from "@/lib/api";
-import type { Course } from "@/types";
+import type { Course, CourseModule } from "@/types";
 
 interface CourseDetailPageProps {
   params: Promise<{
@@ -16,26 +16,44 @@ interface CourseDetailPageProps {
 export default async function CourseDetailPage({ params }: CourseDetailPageProps) {
   const { courseId } = await params;
 
-  // Intercept VSTEP course slugs and mock IDs to render the custom modern course learning dashboard
-  if (
-    courseId === "on-thi-vstep-b1" ||
-    courseId === "vstep-speaking-writing" ||
-    courseId === "course-mock-7" ||
-    courseId === "course-mock-8"
-  ) {
-    return <VstepCourseDetail courseId={courseId} />;
-  }
-
   let course: Course;
+  let modules: CourseModule[] = [];
 
   try {
     course = await api.getCourseById(courseId);
+    try {
+      modules = await api.getCourseModules(courseId);
+    } catch (modulesError) {
+      console.error("Failed to fetch modules:", modulesError);
+    }
   } catch (error) {
+    // Fallback if not found in database to check if it's one of the mock IDs
+    if (
+      courseId === "on-thi-vstep-b1" ||
+      courseId === "vstep-speaking-writing" ||
+      courseId === "course-mock-7" ||
+      courseId === "course-mock-8"
+    ) {
+      return <VstepCourseDetail courseId={courseId} modules={[]} />;
+    }
+
     if (isApiError(error) && error.status === 404) {
       notFound();
     }
 
     throw error;
+  }
+
+  // Intercept VSTEP course slugs and mock IDs to render the custom modern course learning dashboard
+  if (
+    courseId === "on-thi-vstep-b1" ||
+    courseId === "vstep-speaking-writing" ||
+    courseId === "course-mock-7" ||
+    courseId === "course-mock-8" ||
+    course.slug === "on-thi-vstep-b1" ||
+    course.slug === "vstep-speaking-writing"
+  ) {
+    return <VstepCourseDetail courseId={courseId} modules={modules} />;
   }
 
   const lessons = [...(course.lessons ?? [])].sort(

@@ -22,31 +22,9 @@ export function CoursesListClient({ initialCourses }: CoursesListClientProps) {
   const [levelFilter, setLevelFilter] = useState<LevelFilter>("all");
   const [skillFilter, setSkillFilter] = useState<SkillFilter>("all");
 
-  // Merge static metadata with dynamic backend courses
+  // Only display dynamic courses returned from the API
   const mergedCourses = useMemo(() => {
-    // Clone mock courses
-    const courses = JSON.parse(JSON.stringify(MOCK_COURSES)) as CourseWithStats[];
-
-    if (initialCourses && initialCourses.length > 0) {
-      initialCourses.forEach((dbCourse) => {
-        const matchingMock = courses.find(
-          (m) =>
-            m.title.toLowerCase() === dbCourse.title.toLowerCase() ||
-            m.slug.toLowerCase() === dbCourse.slug.toLowerCase()
-        );
-        if (matchingMock) {
-          // Sync backend details to matching mock courses
-          matchingMock.id = dbCourse.id;
-          matchingMock.lessons = dbCourse.lessons;
-          matchingMock.status = dbCourse.status;
-        } else {
-          // If backend has a new course not present in mocks, append it
-          courses.push(dbCourse);
-        }
-      });
-    }
-
-    return courses;
+    return (initialCourses || []) as CourseWithStats[];
   }, [initialCourses]);
 
   const filteredCourses = useMemo(() => {

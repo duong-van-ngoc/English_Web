@@ -7,6 +7,7 @@ export interface VocabularyWord {
   phonetic?: string;
   meaning: string;
   example?: string;
+  exampleVi?: string;
   audioUrl?: string;
   imageUrl?: string;
   partOfSpeech: string;
@@ -21,6 +22,7 @@ export interface VocabularyWordPayload {
   phonetic?: string;
   meaning: string;
   example?: string;
+  exampleVi?: string;
   audioUrl?: string;
   imageUrl?: string;
   partOfSpeech: string;

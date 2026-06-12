@@ -11,10 +11,12 @@ interface TopicTableProps {
   topics: VocabularyTopic[];
   onLock: (id: string) => void;
   onUnlock: (id: string) => void;
+  onPublish: (id: string) => void;
+  onUnpublish: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-export function TopicTable({ topics, onLock, onUnlock, onDelete }: TopicTableProps) {
+export function TopicTable({ topics, onLock, onUnlock, onPublish, onUnpublish, onDelete }: TopicTableProps) {
   if (topics.length === 0) {
     return (
       <div className="py-8 text-center text-text-secondary/70">
@@ -29,9 +31,9 @@ export function TopicTable({ topics, onLock, onUnlock, onDelete }: TopicTablePro
         <TableRow>
           <TableHead>Chủ đề</TableHead>
           <TableHead>Mô tả</TableHead>
-          <TableHead>Số lượng từ</TableHead>
-          <TableHead>Trạng thái</TableHead>
-          <TableHead className="text-right">Thao tác</TableHead>
+          <TableHead className="whitespace-nowrap">Số lượng từ</TableHead>
+          <TableHead className="whitespace-nowrap">Trạng thái</TableHead>
+          <TableHead className="text-right whitespace-nowrap">Thao tác</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -43,10 +45,10 @@ export function TopicTable({ topics, onLock, onUnlock, onDelete }: TopicTablePro
                   <img
                     src={topic.imageUrl}
                     alt={topic.name}
-                    className="w-10 h-10 rounded-lg object-cover border border-border/50"
+                    className="w-10 h-10 rounded-lg object-cover border border-border/50 shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
                     <span className="material-symbols-outlined">menu_book</span>
                   </div>
                 )}
@@ -56,16 +58,16 @@ export function TopicTable({ topics, onLock, onUnlock, onDelete }: TopicTablePro
             <TableCell className="max-w-[300px] truncate text-xs text-text-secondary">
               {topic.description || "Chưa có mô tả"}
             </TableCell>
-            <TableCell className="font-semibold text-sm">
+            <TableCell className="font-semibold text-sm whitespace-nowrap">
               {topic.wordCount} từ
             </TableCell>
-            <TableCell>
+            <TableCell className="whitespace-nowrap">
               <StatusBadge status={topic.status} />
             </TableCell>
-            <TableCell className="text-right">
+            <TableCell className="text-right whitespace-nowrap">
               <div className="flex justify-end items-center gap-2">
                 <Link href={VOCABULARY_ROUTES.TOPIC_WORDS(topic.id)} passHref legacyBehavior>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="whitespace-nowrap">
                     Quản lý từ
                   </Button>
                 </Link>
@@ -86,6 +88,24 @@ export function TopicTable({ topics, onLock, onUnlock, onDelete }: TopicTablePro
                         window.location.href = VOCABULARY_ROUTES.PREVIEW_STUDENT(topic.id);
                       },
                     },
+                    ...(topic.status === "DRAFT"
+                      ? [
+                          {
+                            label: "Xuất bản chủ đề",
+                            icon: "publish",
+                            onClick: () => onPublish(topic.id),
+                          },
+                        ]
+                      : []),
+                    ...(topic.status === "PUBLISHED"
+                      ? [
+                          {
+                            label: "Hủy xuất bản",
+                            icon: "unpublished",
+                            onClick: () => onUnpublish(topic.id),
+                          },
+                        ]
+                      : []),
                     ...(topic.status === "LOCKED"
                       ? [
                           {

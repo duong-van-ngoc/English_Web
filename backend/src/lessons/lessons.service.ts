@@ -55,13 +55,14 @@ export class LessonsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByCourse(courseId: string): Promise<Lesson[]> {
+  async findByCourse(courseId: string, moduleId?: string): Promise<Lesson[]> {
     await this.ensurePublishedCourseExists(courseId);
 
     return this.prisma.lesson.findMany({
       where: {
         courseId,
         status: ContentStatus.PUBLISHED,
+        ...(moduleId ? { moduleId } : {}),
       },
       orderBy: {
         order: 'asc',
@@ -98,6 +99,7 @@ export class LessonsService {
       return await this.prisma.lesson.create({
         data: {
           courseId,
+          moduleId: createLessonDto.moduleId || null,
           title: createLessonDto.title,
           content: createLessonDto.content,
           order: createLessonDto.order,
@@ -119,6 +121,7 @@ export class LessonsService {
           title: updateLessonDto.title,
           content: updateLessonDto.content,
           order: updateLessonDto.order,
+          moduleId: updateLessonDto.moduleId !== undefined ? updateLessonDto.moduleId : undefined,
         },
         include: this.adminLessonInclude,
       });
